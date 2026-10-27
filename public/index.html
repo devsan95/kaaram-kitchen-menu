@@ -521,6 +521,32 @@ body.managing .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .served li span{flex:1;min-width:0;color:var(--muted)}
 .served li b{color:var(--ink)}
 .served .kundo{width:34px;height:34px;border-radius:9px}
+a.hbtn{text-decoration:none}
+/* Home: choose how to order */
+.home{min-height:100vh;background:var(--hero);color:var(--hero-ink);padding:max(28px,env(safe-area-inset-top,0px)) 0 40px}
+.home .wrap{max-width:760px}
+.home .brand{margin-bottom:34px}
+.home-h{font-size:clamp(30px,7vw,48px);font-weight:700;line-height:1.04;margin:0 0 8px;max-width:14ch}
+.home-h em{font-style:normal;color:var(--turmeric)}
+.home-sub{margin:0 0 26px;opacity:.8;font-size:15px}
+.modes{display:grid;gap:12px}
+.mode{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 16px;padding:18px 18px;border-radius:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:var(--hero-ink);text-decoration:none;transition:background .15s,transform .15s}
+a.mode:hover,a.mode:focus-visible{background:rgba(255,255,255,.15);outline:none}
+a.mode:active{transform:scale(.99)}
+.mode .mi{width:48px;height:48px;border-radius:14px;background:var(--turmeric);color:#17201a;display:grid;place-items:center}
+.mode .mi svg{width:26px;height:26px}
+.mode h3{margin:0;font-size:21px;font-weight:700}
+.mode p{margin:2px 0 0;font-size:14px;opacity:.82;line-height:1.35}
+.mode .go{opacity:.75}
+.mode .go svg{width:22px;height:22px}
+.mode .mt{display:inline-block;margin-top:6px;font-size:12.5px;font-weight:600;color:var(--turmeric)}
+.mode form{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:6px}
+.mode form label{display:grid;gap:4px;font-size:13px;font-weight:600;flex:1;max-width:190px}
+.mode form input{padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.18);color:var(--hero-ink);font:inherit;font-size:17px}
+.mode form button{padding:12px 18px;border-radius:12px;border:0;background:var(--turmeric);color:#17201a;font-weight:700;font-size:15px;cursor:pointer}
+.mode form .err{flex-basis:100%;font-size:13px;color:#ffb4a6}
+.home-foot{margin-top:28px;font-size:13px;opacity:.7;display:flex;flex-wrap:wrap;gap:6px 16px}
+.home-foot a{color:inherit}
 </style>
 <script type="application/json" id="menu-data">{
  "v": 1,
@@ -1347,10 +1373,57 @@ const OPT_LABEL={'':'None (add straight to order)',starter:'Spice level',dosa:'D
 const TAGN={best:'Bestseller',chef:"Chef's special",new:'New'};
 const ART_TYPES=[['bowl','Curry bowl'],['rice','Rice or biryani'],['pieces','Fried pieces'],['dosa','Dosa'],['idli','Idli'],['vada','Vada'],['flat','Flatbread'],['sweet','Sweets'],['glass','Drink'],['thali','Banana-leaf meal']];
 const ART_T=ART_TYPES.map(a=>a[0]);
-/* Takeaway mode: link ends in #takeaway, or the page is opened at /takeaway */
-const IS_TA=/^#?take-?away$/i.test(location.hash||'')||/^\/take-?away\/?$/i.test(location.pathname);
-const STEPS=IS_TA?[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Packed','Ready and being handed to the rider'],['On its way','Out for delivery. Keep your phone handy']]
- :[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Ready','Coming to your table'],['Served','Enjoy your meal']];
+/* ---------- Where am I? Every view has its own URL ----------
+   /                 home: choose Dine in, Takeaway or Delivery
+   /table/7          dine in at table 7 (the table QR codes)
+   /takeaway         order ahead and collect from the counter
+   /delivery         home delivery
+   /admin /admin/preview /kitchen /rider   staff screens
+   Opened from a file (no server) the same views use #hashes instead. */
+const FILE=location.protocol==='file:';
+const PATH=FILE?'/':(location.pathname.replace(/\/+$/,'')||'/').toLowerCase();
+const HASH=location.hash||'',hm=HASH.replace(/^#/,'').toLowerCase();
+const STAFF_PATH={'/admin':'edit','/admin/preview':'preview','/kitchen':'kitchen','/rider':'delivery'};
+const STAFF_HASH={admin:'edit',kitchen:'kitchen',rider:'delivery'};
+const VIEW_PATH={edit:'/admin',preview:'/admin/preview',kitchen:'/kitchen',delivery:'/rider'};
+const tm=/^\/table\/(\d{1,3})$/.exec(PATH)||/^#?t(?:able)?-?(\d{1,3})$/i.exec(HASH);
+const MODE=tm?'dine':(PATH==='/takeaway'||/^take-?away$/.test(hm))?'takeaway':(PATH==='/delivery'||hm==='delivery')?'delivery':(STAFF_PATH[PATH]||STAFF_HASH[hm])?'dine':'home';
+const IS_PU=MODE==='takeaway',IS_DL=MODE==='delivery',IS_OFF=IS_PU||IS_DL;
+const route=p=>FILE?({'/':'#','/takeaway':'#takeaway','/delivery':'#delivery'}[p]||('#table'+parseInt(p.slice(7),10))):p;
+window.addEventListener('hashchange',()=>{if(FILE||(PATH==='/'&&/^#?(t(able)?-?\d+|take-?away|delivery)$/i.test(location.hash)))location.reload()});
+if(!FILE&&PATH==='/'){ /* old links: tidy #table12, #takeaway and #delivery into their real addresses */
+ if(tm)history.replaceState(null,'','/table/'+parseInt(tm[1],10));else if(IS_PU)history.replaceState(null,'','/takeaway');else if(IS_DL)history.replaceState(null,'','/delivery');
+}
+if(MODE==='home'){renderHome();return}
+function renderHome(){
+ document.title='Kaaram Kitchen · Order';
+ const hr=new Date().getHours(),svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+ const arrow=svg('<path d="M5 12h14M13 6l6 6-6 6"/>');
+ document.getElementById('app').innerHTML=`<main class="home"><div class="wrap">
+  <div class="brand"><div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 25c9 1 16-6 15-15l-3-1c0 7-5 13-12 13z" fill="#C23C25"/><path d="M21 9c0-3 1-5 4-6" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M19 8.5c1.5-1.6 4-1.6 5.5.2" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg></div>
+   <div><h1>Kaaram Kitchen</h1><p>Andhra &amp; Hyderabadi · Banjara Hills</p></div></div>
+  <h2 class="home-h">${hr<11?'Good morning.':hr<16?'Good afternoon.':'Good evening.'} <em>How would you like to order?</em></h2>
+  <p class="home-sub">Pick one and we’ll show you the menu.</p>
+  <div class="modes">
+   <div class="mode"><span class="mi" aria-hidden="true">${svg('<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4.5-3 7h3v11"/>')}</span>
+    <div><h3>Dine in</h3><p>You’re at the restaurant. Order from your table and pay when you leave.</p><span class="mt">Average wait 15–25 min</span></div><span></span>
+    <form id="dineForm" novalidate><label>Table number<input id="dineNo" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="e.g. 7"></label><button type="submit">Open menu</button><span class="err" id="dineErr" role="alert" hidden></span></form></div>
+   <a class="mode" href="${route('/takeaway')}"><span class="mi" aria-hidden="true">${svg('<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>')}</span>
+    <div><h3>Takeaway</h3><p>Order ahead and collect it from our counter. Pay when you collect.</p><span class="mt">Ready in 20–30 min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
+   <a class="mode" href="${route('/delivery')}"><span class="mi" aria-hidden="true">${svg('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-9H8M14 8h3l1 5"/>')}</span>
+    <div><h3>Delivery</h3><p>We bring it to your door. Pay cash or UPI when it arrives.</p><span class="mt">35–50 min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
+  </div>
+  <div class="home-foot"><span>Kitchen open till 11:30 pm</span><span>Road No. 12, Banjara Hills, Hyderabad</span><a href="${FILE?'#admin':'/admin'}">Staff</a></div>
+ </div></main>`;
+ const f=document.getElementById('dineForm'),inp=document.getElementById('dineNo'),er=document.getElementById('dineErr');
+ f.addEventListener('submit',e=>{e.preventDefault();const n=parseInt(inp.value,10);
+  if(!(n>=1&&n<=20)){er.hidden=false;er.textContent='Enter the number on your table, from 1 to 20.';inp.focus();return}
+  location.href=route('/table/'+n)});
+}
+const STEPS_DINE=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Ready','Coming to your table'],['Served','Enjoy your meal']];
+const STEPS_PU=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Ready to collect','Waiting for you at the counter'],['Collected','Enjoy your meal']];
+const STEPS_DL=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Packed','Ready and being handed to the rider'],['On its way','Out for delivery. Keep your phone handy']];
+const STEPS=IS_DL?STEPS_DL:IS_PU?STEPS_PU:STEPS_DINE;
 const GST=0.05;
 
 /* ---------- Menu data (embedded in the page, replaced on each publish) ---------- */
@@ -1490,9 +1563,8 @@ const ART={};const artOf=it=>{const k=it.id+'|'+JSON.stringify(it.art);return AR
 
 /* ---------- Guest state (per table, this browser only) ---------- */
 const KEY='kaaram-menu-v1';
-const tm=/^#?t(?:able)?-?(\d{1,3})$/i.exec(location.hash||'');
-const TABLE=IS_TA?'TA':String(tm?parseInt(tm[1],10):7).padStart(2,'0');
-const WHERE=IS_TA?'Takeaway':'Table '+TABLE;
+const TABLE=IS_PU?'TA':IS_DL?'DL':String(tm?parseInt(tm[1],10):7).padStart(2,'0');
+const WHERE=IS_PU?'Takeaway':IS_DL?'Delivery':'Table '+TABLE;
 let S={cart:[],orders:[],note:'',tip:0,bill:false,last:{}};
 try{const raw=lsGet(KEY+':'+TABLE);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
 const save=()=>lsSet(KEY+':'+TABLE,JSON.stringify(S));
@@ -1518,12 +1590,12 @@ document.getElementById('app').innerHTML=`
    <div><h1>Kaaram Kitchen</h1><p>Andhra &amp; Hyderabadi · Banjara Hills</p></div></div>
   <div class="hero-actions">
    <button class="hbtn" data-act="orders" id="ordersBtn" hidden><i class="dot"></i><span id="ordersBtnTxt">Your orders</span></button>
-   ${IS_TA?`<button class="hbtn" data-act="goto-dine">${ic.cutlery}Dine-in menu</button>`:`<button class="hbtn" data-act="goto-ta">${ic.receipt}Takeaway</button><button class="hbtn" data-act="waiter">${ic.bell}Call server</button>`}
+   <a class="hbtn" href="${route('/')}">${ic.cutlery}Change order type</a>${IS_OFF?'':`<button class="hbtn" data-act="waiter">${ic.bell}Call server</button>`}
   </div>
  </div>
  <div class="greet"><h2 id="greet">Good evening. <em>What are we eating?</em></h2>
-  <div class="table-card"><div class="table-no num" id="tableNo">07</div>${IS_TA?'<div><small>Takeaway</small><span>Delivered to your door,<br>pay on delivery</span></div>':'<div><small>Your table</small><span>Dine-in · order in rounds,<br>pay when you leave</span></div>'}</div></div>
- <div class="facts"><span><b>Kitchen open</b> till 11:30 pm</span><span><b>${IS_TA?'Delivery':'Avg. wait'}</b> ${IS_TA?'35–50':'15–25'} min</span><span><b>Prices</b> in ₹, plus 5% GST</span></div>
+  <div class="table-card"><div class="table-no num" id="tableNo">07</div>${IS_DL?'<div><small>Delivery</small><span>Delivered to your door,<br>pay on delivery</span></div>':IS_PU?'<div><small>Takeaway</small><span>Collect from the counter,<br>pay when you collect</span></div>':'<div><small>Your table</small><span>Dine-in · order in rounds,<br>pay when you leave</span></div>'}</div></div>
+ <div class="facts"><span><b>Kitchen open</b> till 11:30 pm</span><span><b>${IS_DL?'Delivery':IS_PU?'Ready in':'Avg. wait'}</b> ${IS_DL?'35–50':IS_PU?'20–30':'15–25'} min</span><span><b>Prices</b> in ₹, plus 5% GST</span></div>
 </div></header>
 <div class="wrap tools">
  <label class="search" for="q">
@@ -1544,7 +1616,7 @@ document.getElementById('app').innerHTML=`
 <div class="wrap layout"><main class="menu" id="menu"></main><aside class="aside" aria-label="Your order"><div class="panel" id="panel"></div></aside></div>
 <div class="wrap"><footer class="foot">
  <span>Kaaram Kitchen · Road No. 12, Banjara Hills, Hyderabad · FSSAI-marked veg and non-veg dishes</span>
- <span>Demo: orders reach the kitchen display only in this browser. Add <b>#table12</b> to the link for another table. <button data-act="reset">Reset demo</button> · <button data-act="signin" id="staffBtn">Staff sign-in</button></span>
+ <span>Demo: orders reach the kitchen display only in this browser. Table links look like <b>/table/12</b>. <button data-act="reset">Reset demo</button> · <button data-act="signin" id="staffBtn">Staff sign-in</button></span>
 </footer></div>
 <div class="bar" id="bar"></div>
 <div class="scrim" id="scrim" hidden></div>
@@ -1572,7 +1644,7 @@ const ticketOf=no=>FEED.tickets.find(t=>t.no===no);
 const followsKitchen=o=>{const t=ticketOf(o.no);return t&&(t.kitchen||Date.now()-HB<20000)?t:null};
 const statusIdx=o=>{const k=followsKitchen(o);if(k)return k.st;if(NETFEED)return 0;const t=(Date.now()-o.at)/1000;return t<12?0:t<35?1:t<55?2:3};
 const isDelivered=o=>{const t=ticketOf(o.no);return !!(t&&t.delivered)};
-const needsTracking=o=>statusIdx(o)<3||(IS_TA&&!isDelivered(o));
+const needsTracking=o=>statusIdx(o)<3||(IS_DL&&!isDelivered(o));
 const activeOrders=()=>S.orders.filter(needsTracking);
 const fmtTime=t=>new Date(t).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 const fmtDate=t=>new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
@@ -1662,7 +1734,7 @@ function cartInner(where){
  <div class="bill"><div><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST 2.5%</span><span>${rs(tax/2)}</span></div><div class="muted"><span>SGST 2.5%</span><span>${rs(tax/2)}</span></div>${S.tip?`<div class="muted"><span>Staff tip</span><span>${rs(S.tip)}</span></div>`:''}<div class="total"><span>To pay</span><span>${rs(total)}</span></div></div>`;
  return h;
 }
-function placeBtn(){const n=cartCount();return `<button class="btn primary block" data-act="place" ${n?'':'disabled'}><span>${IS_TA?'Checkout':'Send to kitchen'}</span><span class="spread num">${n?rs(sub()*(1+GST)+S.tip):''}</span>${ic.arrow}</button><p class="fine">${IS_TA?'Pay cash or UPI when your order arrives.':'You pay once, at the end of your meal.'}</p>`}
+function placeBtn(){const n=cartCount();return `<button class="btn primary block" data-act="place" ${n?'':'disabled'}><span>${IS_OFF?'Checkout':'Send to kitchen'}</span><span class="spread num">${n?rs(sub()*(1+GST)+S.tip):''}</span>${ic.arrow}</button><p class="fine">${IS_DL?'Pay cash or UPI when your order arrives.':IS_PU?'Pay at the counter when you collect.':'You pay once, at the end of your meal.'}</p>`}
 function renderPanel(){
  const p=$('#panel');const st=p.querySelector('.cart-scroll')?.scrollTop||0;
  p.innerHTML=`<div class="cart-scroll">${cartInner('panel')}</div>${cartCount()?`<div class="cart-foot">${placeBtn()}</div>`:''}`;
@@ -1735,13 +1807,13 @@ function openCart(keep){
 }
 function trackHTML(o){const si=statusIdx(o);
  const k=followsKitchen(o),times=k?k.ts:[o.at,o.at+12e3,o.at+35e3,o.at+55e3];
- return `<ol class="track">${STEPS.map(([t0,d0],i)=>{const dl=IS_TA&&i===3&&k&&k.delivered,t=dl?'Delivered':t0,d=dl?'Enjoy your meal':d0;return `<li class="${i<si?'done':i===si?(si===3?'done':'now'):'todo'}"><span class="bub">${i<si||si===3&&i===3?ic.check:''}</span><span><b>${t}</b><small>${i===si?d:i<si?'Done':''}</small></span><time>${i<=si&&(dl?k.delivered:times[i])?fmtTime(dl?k.delivered:times[i]):''}</time></li>`}).join('')}</ol>`}
+ return `<ol class="track">${STEPS.map(([t0,d0],i)=>{const dl=IS_DL&&i===3&&k&&k.delivered,t=dl?'Delivered':t0,d=dl?'Enjoy your meal':d0;return `<li class="${i<si?'done':i===si?(si===3?'done':'now'):'todo'}"><span class="bub">${i<si||si===3&&i===3?ic.check:''}</span><span><b>${t}</b><small>${i===si?d:i<si?'Done':''}</small></span><time>${i<=si&&(dl?k.delivered:times[i])?fmtTime(dl?k.delivered:times[i]):''}</time></li>`}).join('')}</ol>`}
 function orderCard(o){const n=o.lines.reduce((t,l)=>t+l.qty,0);
  return `<div class="order-card"><header><h3>Order ${o.no}</h3><span class="pill num">${fmtTime(o.at)} · ${rs(o.total)}</span></header>
   <p class="order-items">${o.lines.map(l=>`${l.qty} × ${esc(l.name)}`).join(', ')} <span class="num">(${n} item${n>1?'s':''})</span></p>${trackHTML(o)}</div>`}
 function openPlaced(o){
  openSheet(`<div class="sheet-scroll">${X}<div class="success"><div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
-  <h2>Sent to the kitchen</h2><p>${o.customer?`Order <b>${o.no}</b> for delivery to ${esc(o.customer.name)}. Expect it in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} if we need help finding you.`:`Order <b>${o.no}</b> for Table ${TABLE}. Expect it in about ${o.eta} minutes. We’ll bring everything to your table.`}</p></div>
+  <h2>Sent to the kitchen</h2><p>${IS_DL&&o.customer?`Order <b>${o.no}</b> for delivery to ${esc(o.customer.name)}. Expect it in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} if we need help finding you.`:IS_PU&&o.customer?`Order <b>${o.no}</b> for ${esc(o.customer.name)}. It will be ready to collect in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} when it’s ready.`:`Order <b>${o.no}</b> for Table ${TABLE}. Expect it in about ${o.eta} minutes. We’ll bring everything to your table.`}</p></div>
   <div class="pad">${orderCard(o)}</div></div>
   <div class="sheet-foot"><button class="btn ghost" data-act="orders">All orders</button><button class="btn primary" data-act="close">Add more dishes</button></div>`,'placed','Order sent');
  ctx.order=o.no;
@@ -1754,10 +1826,10 @@ function openOrders(){
   <span class="eyebrow">${WHERE}</span><h2 class="item-title">Your orders</h2>
   <p class="item-desc">${S.orders.length} round${S.orders.length>1?'s':''} so far · running bill <b class="num">${rs(total)}</b>${S.bill?' · bill requested':''}</p>
   <div style="display:grid;gap:12px;margin-top:14px">${S.orders.slice().reverse().map(orderCard).join('')}</div></div></div>
-  <div class="sheet-foot">${IS_TA?`<button class="btn ghost" data-act="print-bill">${ic.receipt}Print receipt</button>`:`<button class="btn ghost" data-act="bill">${ic.receipt}Ask for bill</button>`}<button class="btn primary" data-act="close">Order more</button></div>`,'orders','Your orders');
+  <div class="sheet-foot">${IS_OFF?`<button class="btn ghost" data-act="print-bill">${ic.receipt}Print receipt</button>`:`<button class="btn ghost" data-act="bill">${ic.receipt}Ask for bill</button>`}<button class="btn primary" data-act="close">Order more</button></div>`,'orders','Your orders');
  const s=body.querySelector('.sheet-scroll');if(s&&sc)s.scrollTop=sc;
 }
-/* ---------- Takeaway checkout ---------- */
+/* ---------- Takeaway and delivery checkout ---------- */
 const CUST_KEY='kaaram-cust';
 const normPhone=v=>{const d=String(v||'').replace(/[\s\-().]/g,'');const m=/^(?:\+?91|0)?([6-9]\d{9})$/.exec(d);if(m)return '+91'+m[1];return /^\+\d{8,15}$/.test(d)?d:''};
 function normMap(v){
@@ -1770,9 +1842,10 @@ function normMap(v){
  return '';
 }
 function validateCust(f){
- const e={},name=f.name.trim(),phone=normPhone(f.phone),address=f.address.trim(),map=normMap(f.map);
+ const e={},name=f.name.trim(),phone=normPhone(f.phone),address=(f.address||'').trim(),map=normMap(f.map);
  if(name.length<2)e.name='Enter your name.';
  if(!phone)e.phone='Enter a valid mobile number, like 98765 43210.';
+ if(IS_PU)return {e,val:{name,phone}};
  if(address.length<10)e.address='Add your full address: flat or house number, building, street and landmark.';
  if(!f.map.trim())e.map='Add your Google Maps location so the rider can find you.';
  else if(!map)e.map='That doesn’t look like a Google Maps link. Paste the link from Google Maps, or use the button.';
@@ -1783,19 +1856,19 @@ function openCheckout(){
  let sv={};try{sv=JSON.parse(lsGet(CUST_KEY)||'{}')||{}}catch(e){}
  const total=Math.round(sub()*(1+GST)+S.tip);
  openSheet(`<div class="sheet-scroll"><div class="pad form" style="padding-top:26px">${X}
-  <div><span class="eyebrow">Takeaway</span><h2 class="item-title">Where should we deliver?</h2><p class="item-desc">We call this number if we can’t find you. Pay cash or UPI on delivery.</p></div>
+  <div><span class="eyebrow">${IS_PU?'Takeaway':'Delivery'}</span><h2 class="item-title">${IS_PU?'Who is collecting?':'Where should we deliver?'}</h2><p class="item-desc">${IS_PU?'We call this number when your order is ready. Pay at the counter when you collect.':'We call this number if we can’t find you. Pay cash or UPI on delivery.'}</p></div>
   <form id="coForm" class="form" novalidate>
    <label class="f" data-f="name"><span>Your name</span><input type="text" name="name" autocomplete="name" maxlength="60" value="${esc(sv.name||'')}"><em class="msg" hidden></em></label>
    <label class="f" data-f="phone"><span>Phone number</span><input type="tel" name="phone" inputmode="tel" autocomplete="tel" placeholder="98765 43210" maxlength="20" value="${esc(sv.phone||'')}"><em class="msg" hidden></em></label>
-   <label class="f" data-f="address"><span>Delivery address</span><textarea name="address" rows="3" autocomplete="street-address" maxlength="300" placeholder="Flat or house no., building, street, landmark">${esc(sv.address||'')}</textarea><em class="msg" hidden></em></label>
+   ${IS_PU?'':`<label class="f" data-f="address"><span>Delivery address</span><textarea name="address" rows="3" autocomplete="street-address" maxlength="300" placeholder="Flat or house no., building, street, landmark">${esc(sv.address||'')}</textarea><em class="msg" hidden></em></label>
    <div class="f" data-f="map"><span>Google Maps location</span>
     <input type="text" name="map" inputmode="url" autocomplete="off" maxlength="500" placeholder="Paste a Google Maps link" value="${esc(sv.map||'')}" aria-label="Google Maps location">
     <button type="button" class="btn ghost" id="geoBtn">${ic.pin||''}Use my current location</button>
-    <p class="hint">Or open Google Maps, touch and hold your doorstep, tap Share, then Copy link, and paste it above.</p><em class="msg" hidden></em></div>
+    <p class="hint">Or open Google Maps, touch and hold your doorstep, tap Share, then Copy link, and paste it above.</p><em class="msg" hidden></em></div>`}
   </form></div></div>
-  <div class="sheet-foot"><button class="btn primary" type="submit" form="coForm"><span>Place order</span><span class="spread num">${rs(total)}</span>${ic.arrow}</button></div>`,'checkout','Delivery details');
+  <div class="sheet-foot"><button class="btn primary" type="submit" form="coForm"><span>Place order</span><span class="spread num">${rs(total)}</span>${ic.arrow}</button></div>`,'checkout',IS_PU?'Takeaway details':'Delivery details');
  const form=$('#coForm');if(!form)return;
- const get=()=>Object.fromEntries(['name','phone','address','map'].map(k=>[k,form.elements[k].value]));
+ const get=()=>Object.fromEntries((IS_PU?['name','phone']:['name','phone','address','map']).map(k=>[k,form.elements[k].value]));
  const show=err=>form.querySelectorAll('[data-f]').forEach(el=>{const m=err[el.dataset.f],em=el.querySelector('.msg');el.classList.toggle('err',!!m);em.hidden=!m;em.textContent=m||''});
  form.addEventListener('submit',e=>{
   e.preventDefault();const {e:err,val}=validateCust(get());show(err);
@@ -1804,7 +1877,8 @@ function openCheckout(){
   placeOrder(document.querySelector('.sheet-foot [type=submit]'),val);
  });
  const g=$('#geoBtn');
- if(!navigator.geolocation){g.hidden=true}
+ if(!g);
+ else if(!navigator.geolocation){g.hidden=true}
  else g.addEventListener('click',()=>{
   g.disabled=true;g.textContent='Finding you…';
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -1822,24 +1896,24 @@ function billModel(orders){
  return {rows,st,tax,tips,total:st+tax+tips};
 }
 function printBill(orders,table){
- const cust=(orders.find(o=>o.customer)||{}).customer,ta=table==='TA'||!!cust;
+ const cust=(orders.find(o=>o.customer)||{}).customer,ta=table==='TA'||table==='DL'||!!cust,lbl=table==='DL'||(cust&&cust.address)?'Delivery':'Takeaway';
  if(!orders.length){toast('Nothing to print yet.');return}
  const b=billModel(orders),when=new Date().toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
  const nums=orders.map(o=>o.no).join(', ');
  const grand=Math.round(b.total),cgst=Math.round(b.tax/2),sgst=grand-Math.round(b.st)-b.tips-cgst; /* rounded lines add up exactly to the total */
- const html='<!doctype html><html><head><meta charset="utf-8"><title>Bill · '+(ta?'Takeaway':'Table '+esc(table))+'</title><style>'
+ const html='<!doctype html><html><head><meta charset="utf-8"><title>Bill · '+(ta?lbl:'Table '+esc(table))+'</title><style>'
   +'@page{margin:8mm}*{box-sizing:border-box}body{font:13px/1.45 "Courier New",ui-monospace,monospace;color:#000;margin:0 auto;max-width:78mm;padding:4px}'
   +'h1{font:700 20px/1.1 Georgia,serif;text-align:center;margin:0}p{margin:0}.c{text-align:center}.m{color:#444;font-size:11.5px}'
   +'hr{border:0;border-top:1px dashed #000;margin:8px 0}.r{display:flex;justify-content:space-between;gap:10px}.r span:first-child{flex:1}.r span:last-child{white-space:nowrap}'
   +'.t{font-weight:700;font-size:15px}</style></head><body>'
   +'<h1>Kaaram Kitchen</h1><p class="c m">Andhra &amp; Hyderabadi · Banjara Hills</p><hr>'
-  +'<div class="r"><span>'+(ta?'Takeaway':'Table '+esc(table))+'</span><span>'+esc(when)+'</span></div><p class="m">Orders: '+esc(nums)+'</p>'
-  +(cust?'<hr><p><b>'+esc(cust.name)+'</b> · '+esc(cust.phone)+'</p><p class="m">'+esc(cust.address)+'</p>':'')+'<hr>'
+  +'<div class="r"><span>'+(ta?lbl:'Table '+esc(table))+'</span><span>'+esc(when)+'</span></div><p class="m">Orders: '+esc(nums)+'</p>'
+  +(cust?'<hr><p><b>'+esc(cust.name)+'</b> · '+esc(cust.phone)+'</p>'+(cust.address?'<p class="m">'+esc(cust.address)+'</p>':''):'')+'<hr>'
   +b.rows.map(x=>'<div class="r"><span>'+x.q+' × '+esc(x.n)+'</span><span>'+rs(x.amt)+'</span></div>').join('')
   +'<hr><div class="r"><span>Item total</span><span>'+rs(b.st)+'</span></div>'
   +'<div class="r"><span>CGST 2.5%</span><span>'+rs(cgst)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(sgst)+'</span></div>'
   +(b.tips?'<div class="r"><span>Staff tip</span><span>'+rs(b.tips)+'</span></div>':'')
-  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div><hr><p class="c">Thank you for dining with us!</p></body></html>';
+  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div><hr><p class="c">'+(ta?'Thank you for ordering with us!':'Thank you for dining with us!')+'</p></body></html>';
  const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
  document.body.appendChild(f);
  const d=f.contentWindow.document;d.open();d.write(html);d.close();
@@ -1873,14 +1947,14 @@ function placeOrder(btn,cust){
  setTimeout(async()=>{
   const lines=S.cart.map(l=>{const it=BY[l.id];return {id:l.id,name:it.name,qty:l.qty,unit:unit(it,l.sel),opt:summary(it,l.sel),note:l.note,v:it.v}});
   const st=lines.reduce((t,l)=>t+l.qty*l.unit,0);
-  const total=Math.round(st*(1+GST)+S.tip),eta=Math.max(...lines.map(l=>BY[l.id].m))+5+(cust?25:0);
-  const extra=cust?{type:'takeaway',customer:cust}:{};
+  const total=Math.round(st*(1+GST)+S.tip),eta=Math.max(...lines.map(l=>BY[l.id].m))+5+(IS_DL?25:IS_PU?5:0);
+  const extra=cust?{type:IS_DL?'delivery':'takeaway',customer:cust}:{};
   let o;
   if(NETFEED){
    try{
     const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:TABLE,lines,note:S.note,total,eta,...extra})});
     if(r.status===429){toast('Too many orders at once. Please wait a moment and try again.');throw 0}
-    if(r.status===400&&cust){toast('Please check your name, phone, address and map link.');throw 0}
+    if(r.status===400&&cust){toast(IS_PU?'Please check your name and phone number.':'Please check your name, phone, address and map link.');throw 0}
     if(!r.ok)throw 0;
     const j=await r.json();
     o={no:j.no,at:j.at,lines,tip:S.tip,note:S.note,total,eta,...extra};
@@ -1936,7 +2010,7 @@ async function loadServerMenu(){
 }
 /* ---------- Delivery screen (riders and staff) ---------- */
 let dVer='',dPrimed=false,dSeen=new Set();
-const dvList=()=>FEED.tickets.filter(t=>t.type==='takeaway'&&t.st>=2&&t.customer&&!t.sample);
+const dvList=()=>FEED.tickets.filter(t=>kind(t)==='delivery'&&t.st>=2&&t.customer&&!t.sample);
 function dvCard(t){
  const c=t.customer,state=t.delivered?'Delivered':t.st===3?'On the road':'Ready for pickup',since=t.ts[t.delivered?4:t.st]||t.at;
  const items=t.lines.map(l=>`<li><span class="q">${l.qty}×</span><span>${esc(l.name)}${l.opt?` <small>${esc(l.opt)}</small>`:''}</span></li>`).join('');
@@ -2027,7 +2101,7 @@ async function pollOrders(){
    const r=await fetch('/api/orders?nos='+encodeURIComponent(nos.slice(-20).join(',')),{cache:'no-store'});
    if(r.ok)(await r.json()).forEach(u=>{
     const t=ticketOf(u.no);
-    if(t){t.st=u.st;t.ts=u.ts&&u.ts.length?u.ts:t.ts;const was=t.delivered;t.delivered=u.dl||0;if(IS_TA&&u.dl&&!was){toast('Your order has been delivered. Enjoy!');refreshTrack()}}
+    if(t){t.st=u.st;t.ts=u.ts&&u.ts.length?u.ts:t.ts;const was=t.delivered;t.delivered=u.dl||0;if(IS_DL&&u.dl&&!was){toast('Your order has been delivered. Enjoy!');refreshTrack()}}
     else FEED.tickets.push({no:u.no,table:TABLE,at:(S.orders.find(o=>o.no===u.no)||{}).at||Date.now(),lines:[],st:u.st,ts:u.ts||[],kitchen:true,sample:false,delivered:u.dl||0});
    });
   }
@@ -2040,8 +2114,8 @@ function openSignin(next){
  A.next=next==='kitchen'||next==='delivery'?next:'edit';
  openSheet(`<div class="sheet-scroll"><div class="pad form" style="padding-top:28px">${X}
   <div class="lock">${ic.lock}</div>
-  <div><span class="eyebrow">Staff only</span><h2 class="item-title">${A.next==='delivery'?'Open the delivery screen':A.next==='kitchen'?'Open the kitchen display':'Manage the menu'}</h2>
-  <p class="item-desc">${A.next==='delivery'?'See packed takeaway orders with the customer’s phone, address and map link, and mark each one picked up and delivered.':A.next==='kitchen'?'See incoming orders by table and move each ticket from new to cooking, ready and served.':'Add, edit and remove dishes and categories, mark dishes sold out, and publish the changes.'}</p></div>
+  <div><span class="eyebrow">Staff only</span><h2 class="item-title">${A.next==='delivery'?'Open the rider screen':A.next==='kitchen'?'Open the kitchen display':'Manage the menu'}</h2>
+  <p class="item-desc">${A.next==='delivery'?'See packed delivery orders with the customer’s phone, address and map link, and mark each one picked up and delivered.':A.next==='kitchen'?'See incoming orders by table and move each ticket from new to cooking and ready. Dine-in, takeaway and delivery orders each get their own steps.':'Add, edit and remove dishes and categories, mark dishes sold out, and publish the changes.'}</p></div>
   <form id="loginForm" autocomplete="on" class="form" novalidate>
    <label class="f"><span>Username</span><input type="text" name="username" id="lgUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
    <label class="f"><span>Password</span><input type="password" name="password" id="lgPass" autocomplete="current-password" required></label>
@@ -2060,7 +2134,7 @@ async function doLogin(){
  else ok=sha256(u+':'+pw)===AUTH.hash;
  if(ok){
   loginFails=0;ssSet(AUTH_SS,'1');const rider=ssGet('kaaram-role')==='rider',nxt=rider?'delivery':A.next;enterAdmin(nxt);
-  toast(nxt==='delivery'?'Signed in to the delivery screen':nxt==='kitchen'?'Signed in to the kitchen display':'Signed in. Your edits stay a draft until you publish.');return;
+  toast(nxt==='delivery'?'Signed in to the rider screen':nxt==='kitchen'?'Signed in to the kitchen display':'Signed in. Your edits stay a draft until you publish.');return;
  }
  loginFails++;if(loginFails>=5)setTimeout(()=>{loginFails=0},60000);
  fail('Incorrect username or password.');$('#lgPass').value='';$('#lgPass').focus();
@@ -2078,6 +2152,7 @@ function enterAdmin(view){
 function signOut(){
  const keep=dirty();stopKitchen();A.on=false;ssSet(ADMIN_SS,null);ssSet(AUTH_SS,null);ssSet('kaaram-cred',null);ssSet('kaaram-role',null);CRED=null;M=DATA;reindex();
  document.body.classList.remove('admin','managing');renderAll();
+ if(!FILE){location.assign('/');return}
  toast(keep?'Signed out. Your unpublished draft is saved on this device.':'Signed out');
 }
 function mutate(fn,msg){fn(M);A.changes++;reindex();stashDraft();renderAll();if(msg)toast(msg)}
@@ -2120,7 +2195,7 @@ function renderAbar(){
  if(!A.on){el.hidden=true;el.innerHTML='';document.documentElement.style.setProperty('--abar-h','0px');return}
  const d=dirty(),open=FEED.tickets.filter(t=>t.st<3).length,kit=A.view==='kitchen',dvw=A.view==='delivery',rider=A.role==='rider',dvN=dvList().filter(t=>!t.delivered).length;
  el.hidden=false;
- const dvTab=['delivery',ic.pin,'Delivery'+(dvN?` <span class="tcount">${dvN}</span>`:'')];
+ const dvTab=['delivery',ic.pin,'Deliveries'+(dvN?` <span class="tcount">${dvN}</span>`:'')];
  const tabs=rider?[dvTab]:[['edit',ic.edit,'Menu'],['kitchen',ic.flame,'Kitchen'+(open?` <span class="tcount">${open}</span>`:'')],dvTab,['preview',ic.eye,'Guest view']];
  el.innerHTML=`<div class="wrap"><div class="who"><span class="badge">${rider?'Rider':'Staff'}</span><span class="st${d?' dirty':''}">${d?`Unpublished menu changes (${A.changes})`:dvw?`Deliveries · ${dvN} to do`:kit?`Kitchen display · ${open} open ticket${open===1?'':'s'}`:DATA.updated?`Live menu · published ${fmtDate(DATA.updated)}`:'Live menu · no edits yet'}</span></div>
   <div class="abtns"><div class="vtabs" role="tablist" aria-label="Staff views">${tabs.map(([k,i,l])=>`<button role="tab" aria-selected="${A.view===k}" data-act="a-view" data-v="${k}">${i}${l}</button>`).join('')}</div>
@@ -2229,10 +2304,14 @@ function moveCat(id,d){mutate(m=>{const i=m.cats.findIndex(x=>x.id===id),j=i+d;i
 /* ---------- Kitchen display ---------- */
 const KST=['New','Cooking','Ready','Served'],KNEXT=['Start cooking','Mark ready','Served'];
 const KST_T=['New','Cooking','Packed','Dispatched'],KNEXT_T=['Start cooking','Mark packed','Dispatch'];
-const KS=t=>t&&t.type==='takeaway'?KST_T:KST,KN=t=>t&&t.type==='takeaway'?KNEXT_T:KNEXT;
-const gk=t=>t.type==='takeaway'?'TA·'+t.no:t.table;              // kitchen card key: one card per takeaway order
-const whereOf=t=>t.type==='takeaway'?'Takeaway'+(t.customer?' · '+t.customer.name:''):'Table '+t.table;
-const custHTML=(c,noName)=>`<div class="cust">${noName?'':`<b>${esc(c.name)}</b> · `}<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a><div>${esc(c.address)}</div>${/^https:\/\//.test(c.map)?`<a class="maplink" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>`:''}</div>`;
+const KST_P=['New','Cooking','Ready to collect','Collected'],KNEXT_P=['Start cooking','Mark ready','Handed over'];
+/* kind: 'dinein' | 'takeaway' (collect) | 'delivery'. Orders saved before the split carried an address under 'takeaway'. */
+const kind=t=>t.type==='delivery'||(t.type==='takeaway'&&t.customer&&t.customer.address)?'delivery':t.type==='takeaway'?'takeaway':'dinein';
+const KS=t=>{const k=t?kind(t):'dinein';return k==='delivery'?KST_T:k==='takeaway'?KST_P:KST},KN=t=>{const k=t?kind(t):'dinein';return k==='delivery'?KNEXT_T:k==='takeaway'?KNEXT_P:KNEXT};
+const gk=t=>kind(t)==='delivery'?'DL·'+t.no:kind(t)==='takeaway'?'TA·'+t.no:t.table;   // kitchen card key: one card per takeaway or delivery order
+const tagOf=t=>kind(t)==='delivery'?'DL':kind(t)==='takeaway'?'TA':'T'+t.table;
+const whereOf=t=>{const k=kind(t);return k==='dinein'?'Table '+t.table:(k==='delivery'?'Delivery':'Takeaway')+(t.customer?' · '+t.customer.name:'')};
+const custHTML=(c,noName)=>`<div class="cust">${noName?'':`<b>${esc(c.name)}</b> · `}<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>${c.address?`<div>${esc(c.address)}</div>`:''}${/^https:\/\//.test(c.map||'')?`<a class="maplink" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>`:''}</div>`;
 const NOTES=['No onion, no garlic','Less oil please','Extra spicy','Allergic to peanuts','Kid’s portion, mild','Serve together with the biryani'];
 let KV=ssGet('kaaram-kv')==='board'?'board':'tables',demoOn=ssGet('kaaram-demo')==='1',demoT=null,audio=null,soundOn=false,wake=null,seen=new Set();
 const mmss=ms=>{const s=Math.max(0,Math.floor(ms/1000)),m=Math.floor(s/60);return m>=60?`${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`:`${m}:${String(s%60).padStart(2,'0')}`};
@@ -2270,9 +2349,9 @@ function feedChanged(){
 function ticketHTML(t,board){
  const ms=Date.now()-t.at,fresh=t.st===0&&ms<15000;
  return `<article class="tk s${t.st}${board?' boxed':''}${fresh?' fresh':''}" aria-label="Order ${t.no}, ${whereOf(t)}, ${KS(t)[t.st]}">
-  <div class="tk-top">${board?`<span class="tlabel">${t.type==='takeaway'?'TA':'T'+t.table}</span>`:''}<span class="no">${t.no}</span><span class="kchip s${t.st}">${KS(t)[t.st]}</span>${t.sample?'<span class="kchip ex">Example</span>':''}
+  <div class="tk-top">${board?`<span class="tlabel">${tagOf(t)}</span>`:''}<span class="no">${t.no}</span><span class="kchip s${t.st}">${KS(t)[t.st]}</span>${t.sample?'<span class="kchip ex">Example</span>':''}
    <span class="timer ${lateClass(ms,t.st)}" data-since="${t.at}" data-st="${t.st}" title="Time since ordered">${ic.clock}<span>${mmss(ms)}</span></span></div>
-  ${t.type==='takeaway'&&t.customer?custHTML(t.customer):''}
+  ${kind(t)!=='dinein'&&t.customer?custHTML(t.customer):''}
   <ul>${t.lines.map(l=>`<li><span class="q">${l.qty}×</span><div><div class="n">${vm(l.v)}<span>${esc(l.name)}</span></div>${l.opt?`<div class="o">${esc(l.opt)}</div>`:''}${l.note?`<span class="knote">${esc(l.note)}</span>`:''}</div></li>`).join('')}</ul>
   ${t.note?`<span class="knote">Table note: ${esc(t.note)}</span>`:''}
   <div class="tk-act">${t.st?`<button class="kundo" data-act="k-undo" data-no="${t.no}" aria-label="Move ${t.no} back to ${KS(t)[t.st-1]}">${ic.undo}</button>`:''}<button class="kbump n${t.st+1}" data-act="k-bump" data-no="${t.no}">${KN(t)[t.st]}${ic.arrow}</button></div>
@@ -2300,7 +2379,7 @@ function renderKitchen(){
  if(!open.length)h+=`<div class="empty ktable">${emptyPlate()}<h3>No open orders</h3><p>New orders appear here the moment a table sends them.</p></div>`;
  else if(KV==='tables'){
   h+=`<div class="ktables">${tables.map(tb=>{const ts=byTable[tb],cnt=[0,1,2].map(s=>ts.filter(t=>t.st===s).length),amt=ts.reduce((s,t)=>s+(t.total||0),0);
-   return `<article class="ktable"><header><div class="tno"><small>${tb.startsWith('TA')?'Takeaway':'Table'}</small>${tb.startsWith('TA')?'TA':tb}</div><div class="tmeta"><b>${ts.length} ticket${ts.length>1?'s':''}</b> · ${ts.reduce((s,t)=>s+t.lines.reduce((u,l)=>u+l.qty,0),0)} items<br>${rs(amt)} incl. GST</div>
+   return `<article class="ktable"><header><div class="tno"><small>${tb.startsWith('TA·')?'Takeaway':tb.startsWith('DL·')?'Delivery':'Table'}</small>${/^(TA|DL)·/.test(tb)?tb.slice(0,2):tb}</div><div class="tmeta"><b>${ts.length} ticket${ts.length>1?'s':''}</b> · ${ts.reduce((s,t)=>s+t.lines.reduce((u,l)=>u+l.qty,0),0)} items<br>${rs(amt)} incl. GST</div>
     <div class="tchips">${cnt.map((c,s)=>c?`<span class="kchip s${s}">${c} ${KS(ts[0])[s]}</span>`:'').join('')}<button class="kundo" style="width:34px;height:34px" data-act="k-print" data-table="${tb}" aria-label="Print bill for table ${tb}" title="Print bill">${ic.receipt}</button></div></header>${ts.map(t=>ticketHTML(t,false)).join('')}</article>`}).join('')}</div>`;
   const free=[];for(let i=1;i<=TABLES;i++){const k=String(i).padStart(2,'0');if(!byTable[k])free.push(k)}
   if(free.length)h+=`<div class="kfree">No open orders: ${free.map(f=>`<span>T${f}</span>`).join('')}</div>`;
@@ -2311,12 +2390,13 @@ function renderKitchen(){
  const tl=Object.entries(tally).sort((a,b)=>b[1]-a[1]);
  const served=FEED.tickets.filter(t=>t.st===3).sort((a,b)=>(b.ts[3]||0)-(a.ts[3]||0)).slice(0,6);
  h+=`</div><aside class="kside"><div class="kpanel"><h3>To cook now</h3><p class="hint">Every dish on new and cooking tickets, added up.</p>${tl.length?`<ul class="tally">${tl.map(([n,q])=>`<li><span>${esc(n)}</span><b>${q}</b></li>`).join('')}</ul>`:'<p class="hint">Nothing to cook.</p>'}</div>
-  <div class="kpanel"><h3>Recently served</h3>${served.length?`<ul class="served" style="margin-top:8px">${served.map(t=>`<li><span><b>${t.type==='takeaway'?'TA':'T'+t.table}</b> · ${t.no} · ${t.ts[3]?fmtTime(t.ts[3]):''}</span><button class="kundo" data-act="k-undo" data-no="${t.no}" aria-label="Move ${t.no} back to Ready">${ic.undo}</button></li>`).join('')}</ul>`:'<p class="hint">Served tickets show here so you can undo a mis-tap.</p>'}</div></aside></div></section>`;
+  <div class="kpanel"><h3>Recently served</h3>${served.length?`<ul class="served" style="margin-top:8px">${served.map(t=>`<li><span><b>${tagOf(t)}</b> · ${t.no} · ${t.ts[3]?fmtTime(t.ts[3]):''}</span><button class="kundo" data-act="k-undo" data-no="${t.no}" aria-label="Move ${t.no} back to Ready">${ic.undo}</button></li>`).join('')}</ul>`:'<p class="hint">Served tickets show here so you can undo a mis-tap.</p>'}</div></aside></div></section>`;
  $('#menu').innerHTML=h;
 }
 function tickTimers(){const now=Date.now();document.querySelectorAll('[data-since]').forEach(el=>{const ms=now-(+el.dataset.since),st=+el.dataset.st,sp=el.querySelector('span');if(sp)sp.textContent=mmss(ms);const c=lateClass(ms,st);el.classList.toggle('warn',c==='warn');el.classList.toggle('late',c==='late')})}
-function setView(v){
+function setView(v,fromHistory){
  const was=A.view;A.view=v;ssSet(ADMIN_SS,v);
+ const vp=VIEW_PATH[v];if(!FILE&&!fromHistory&&vp&&location.pathname.replace(/\/+$/,'')!==vp)history.pushState({v},'',vp);
  if(v==='kitchen'){FEED=readFeed();startKitchen()}else if(was==='kitchen')stopKitchen();
  if(v==='delivery'){FEED=readFeed();dVer='';dPrimed=false;nextPollAt=0}
  renderAll();scrollTo(0,0);
@@ -2354,14 +2434,12 @@ document.addEventListener('click',e=>{
   case 'confirm':ctx.confirm&&ctx.confirm();break;
   case 'cart':openCart();break;
   case 'close':closeSheet();break;
-  case 'place':if(IS_TA)openCheckout();else placeOrder(el);break;
+  case 'place':if(IS_OFF)openCheckout();else placeOrder(el);break;
   case 'orders':openOrders();break;
   case 'bill':openBill();break;
   case 'k-testprint':printBill([{no:'TEST',total:1071,tip:0,lines:[{name:'Test dish (print check)',opt:'',qty:2,unit:100},{name:'Another test dish',opt:'₹ symbol check',qty:1,unit:820}]}],'00');break;
   case 'print-bill':printBill(S.orders,TABLE);break;
-  case 'goto-ta':location.hash='#takeaway';location.reload();break;
-  case 'goto-dine':if(/^\/take-?away/i.test(location.pathname))location.href='/';else{location.hash='';location.reload()}break;
-  case 'k-print':printBill(FEED.tickets.filter(t=>gk(t)===el.dataset.table&&!t.sample),el.dataset.table.startsWith('TA')?'TA':el.dataset.table);break;
+  case 'k-print':printBill(FEED.tickets.filter(t=>gk(t)===el.dataset.table&&!t.sample),/^(TA|DL)·/.test(el.dataset.table)?el.dataset.table.slice(0,2):el.dataset.table);break;
   case 'reqbill':{const p=body.querySelector('input[name=pay]:checked')?.value;S.bill=true;save();closeSheet();toast(`Bill requested. A server is bringing it to Table ${TABLE}${p==='upi'?' with a UPI QR':''}.`);break}
   case 'waiter':openWaiter();break;
   case 'req':closeSheet();toast(`${el.dataset.label}: request sent for Table ${TABLE}`);break;
@@ -2381,7 +2459,7 @@ document.addEventListener('click',e=>{
   case 'k-clear':FEED=readFeed();FEED.tickets=FEED.tickets.filter(t=>!t.sample);writeFeed();renderKitchen();renderAbar();toast('Example tickets cleared');break;
   case 'k-bump':case 'k-undo':{FEED=readFeed();const t=ticketOf(el.dataset.no);if(!t)break;
    if(a==='k-bump'){t.st=Math.min(3,t.st+1);t.ts[t.st]=Date.now()}else{t.st=Math.max(0,t.st-1);t.ts.length=t.st+1}
-   t.kitchen=true;writeFeed();renderKitchen();renderAbar();if(a==='k-bump'&&t.st===3)toast(t.type==='takeaway'?`${whereOf(t)} dispatched · ${t.no}`:`Table ${t.table} served · ${t.no}`);if(NETFEED)netPatch(t);break}
+   t.kitchen=true;writeFeed();renderKitchen();renderAbar();if(a==='k-bump'&&t.st===3)toast(kind(t)==='delivery'?`${whereOf(t)} dispatched · ${t.no}`:kind(t)==='takeaway'?`${whereOf(t)} handed over · ${t.no}`:`Table ${t.table} served · ${t.no}`);if(NETFEED)netPatch(t);break}
   case 'a-publish':publishMenu(el);break;
   case 'a-discard':openConfirm('Discard your changes?',`${A.changes} unpublished change${A.changes===1?'':'s'} will be lost. The live menu stays as it is.`,'Discard changes',()=>{M=clone(DATA);A.changes=0;reindex();lsSet(DRAFT,null);closeSheet();renderAll();toast('Changes discarded')});break;
   case 'a-signout':signOut();break;
@@ -2436,7 +2514,7 @@ setInterval(()=>{
  if(!S.orders.length)return;
  const now=S.orders.map(statusIdx).join('');if(now===sig)return;
  const prev=sig;sig=now;
- if(prev&&prev.length===now.length){S.orders.forEach((o,i)=>{if(+now[i]===2&&+prev[i]===1)toast(IS_TA?`Order ${o.no} is packed and about to leave.`:`Order ${o.no} is ready. On its way to Table ${TABLE}.`)})}
+ if(prev&&prev.length===now.length){S.orders.forEach((o,i)=>{if(+now[i]===2&&+prev[i]===1)toast(IS_DL?`Order ${o.no} is packed and about to leave.`:IS_PU?`Order ${o.no} is ready to collect at the counter.`:`Order ${o.no} is ready. On its way to Table ${TABLE}.`)})}
  renderBar();renderPanel();
  if(sheetType==='orders')openOrders();
  if(sheetType==='placed'){const o=S.orders.find(x=>x.no===ctx.order);const c=body.querySelector('.order-card');if(o&&c)c.outerHTML=orderCard(o)}
@@ -2447,16 +2525,19 @@ $('#tableNo').textContent=TABLE;
 const hr=new Date().getHours();
 $('#greet').innerHTML=(hr<11?'Good morning.':hr<16?'Good afternoon.':'Good evening.')+' <em>'+(hr<11?'Dosa or pesarattu?':'What are we eating?')+'</em>';
 renderAll();save();sig=S.orders.map(statusIdx).join('');
-const savedView=ssGet(ADMIN_SS);
+const savedView=ssGet(ADMIN_SS),pathView=STAFF_PATH[PATH];
 loadServerMenu().then(async()=>{
- const path=location.pathname.replace(/\/+$/,'');
- if(SERVER&&path==='/admin'&&await apiAuth()==='staff'){ssSet(AUTH_SS,'1');ssSet('kaaram-role','staff');if(!A.on)enterAdmin('edit')}
- if(SERVER&&path==='/delivery'){const role=await apiAuth();if(role){ssSet(AUTH_SS,'1');ssSet('kaaram-role',role);if(!A.on)enterAdmin('delivery')}}
+ if(SERVER&&pathView){const role=await apiAuth();if(role&&(role==='staff'||pathView==='delivery')){ssSet(AUTH_SS,'1');ssSet('kaaram-role',role);if(!A.on)enterAdmin(pathView)}}
 });
-if(savedView){if(isAuthed())enterAdmin(savedView);else ssSet(ADMIN_SS,null)}
-else if(location.hash==='#admin')openSignin('edit');
-else if(location.hash==='#kitchen')openSignin('kitchen');
-else if(location.hash==='#delivery')openSignin('delivery');
+if(savedView&&(pathView||FILE)){if(isAuthed())enterAdmin(pathView||savedView);else ssSet(ADMIN_SS,null)}
+else if(hm==='admin')openSignin('edit');
+else if(hm==='kitchen')openSignin('kitchen');
+else if(hm==='rider')openSignin('delivery');
+/* Back and forward move between staff screens; anything else is a different page, so reload it */
+window.addEventListener('popstate',()=>{
+ const v=STAFF_PATH[location.pathname.replace(/\/+$/,'').toLowerCase()];
+ if(v&&A.on&&(A.role!=='rider'||v==='delivery')){if(v!==A.view)setView(v,true)}else location.reload();
+});
 })();
 </script>
 

@@ -5,6 +5,8 @@ const { canDeliver, deny, pipe, readBody } = require('./_lib');
 
 const HASH = 'kaaram-orders', VER = 'kaaram-ver', KEEP_DELIVERED_MS = 30 * 60e3;
 
+// Orders saved before takeaway and delivery were split carry an address under type 'takeaway'.
+const isDel = t => t.type === 'delivery' || (t.type === 'takeaway' && t.customer && t.customer.address);
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json');
@@ -20,9 +22,9 @@ module.exports = async (req, res) => {
       const now = Date.now(), tickets = [];
       for (let i = 0; i < flat.length; i += 2) {
         let t; try { t = JSON.parse(flat[i + 1]); } catch (e) { continue; }
-        if (t.type !== 'takeaway' || t.st < 2) continue;
+        if (!isDel(t) || t.st < 2) continue;
         if (t.delivered && now - t.delivered > KEEP_DELIVERED_MS) continue;
-        tickets.push({ no: t.no, at: t.at, eta: t.eta, lines: t.lines, note: t.note, total: t.total, customer: t.customer, st: t.st, ts: t.ts, delivered: t.delivered || 0, type: 'takeaway', table: 'TA' });
+        tickets.push({ no: t.no, at: t.at, eta: t.eta, lines: t.lines, note: t.note, total: t.total, customer: t.customer, st: t.st, ts: t.ts, delivered: t.delivered || 0, type: 'delivery', table: 'DL' });
       }
       tickets.sort((a, b) => a.at - b.at);
       return res.end(JSON.stringify({ v, tickets }));
@@ -34,7 +36,7 @@ module.exports = async (req, res) => {
       const [raw] = await pipe([['HGET', HASH, b.no]]);
       if (!raw) return fail(404, 'no such ticket');
       const t = JSON.parse(raw);
-      if (t.type !== 'takeaway') return fail(400, 'not a delivery order');
+      if (!isDel(t)) return fail(400, 'not a delivery order');
       const now = Date.now();
       if (b.action === 'pickup') {
         if (t.st < 2) return fail(409, 'not packed yet');

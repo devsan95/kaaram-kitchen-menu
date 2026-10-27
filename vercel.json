@@ -2,14 +2,34 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/api/admin"
+      "destination": "/api/admin?view=admin"
     },
     {
-      "source": "/delivery",
-      "destination": "/api/admin?view=delivery"
+      "source": "/admin/preview",
+      "destination": "/api/admin?view=preview"
+    },
+    {
+      "source": "/kitchen",
+      "destination": "/api/admin?view=kitchen"
+    },
+    {
+      "source": "/rider",
+      "destination": "/api/admin?view=rider"
     },
     {
       "source": "/takeaway",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/delivery",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dine-in",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/table/:n",
       "destination": "/index.html"
     }
   ],

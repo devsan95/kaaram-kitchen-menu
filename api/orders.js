@@ -30,6 +30,12 @@ function cleanMap(v) {
   } catch (e) { /* not a URL */ }
   return '';
 }
+// Takeaway (collect in person) needs a name and phone; delivery also needs an address and a Google Maps location.
+function cleanPickup(c) {
+  if (!c || typeof c !== 'object') return null;
+  const name = str(c.name, 60).trim(), phone = cleanPhone(c.phone);
+  return name.length >= 2 && phone ? { name, phone } : null;
+}
 function cleanCustomer(c) {
   if (!c || typeof c !== 'object') return null;
   const name = str(c.name, 60).trim(), address = str(c.address, 300).trim(), phone = cleanPhone(c.phone), map = cleanMap(c.map);
@@ -38,11 +44,12 @@ function cleanCustomer(c) {
 
 function cleanOrder(b) {
   if (!b || typeof b !== 'object' || !Array.isArray(b.lines) || !b.lines.length || b.lines.length > 40) return null;
-  const ta = b.type === 'takeaway';
-  const customer = ta ? cleanCustomer(b.customer) : null;
-  if (ta && !customer) return null;
-  const table = ta ? 'TA' : String(b.table || '');
-  if (!ta && !/^\d{1,2}$/.test(table)) return null;
+  const type = b.type === 'takeaway' || b.type === 'delivery' ? b.type : 'dinein';
+  const off = type !== 'dinein';
+  const customer = type === 'delivery' ? cleanCustomer(b.customer) : type === 'takeaway' ? cleanPickup(b.customer) : null;
+  if (off && !customer) return null;
+  const table = type === 'takeaway' ? 'TA' : type === 'delivery' ? 'DL' : String(b.table || '');
+  if (!off && !/^\d{1,2}$/.test(table)) return null;
   const lines = [];
   for (const l of b.lines) {
     if (!l || typeof l !== 'object') return null;
@@ -54,7 +61,7 @@ function cleanOrder(b) {
     });
   }
   return {
-    table: ta ? 'TA' : table.padStart(2, '0'), type: ta ? 'takeaway' : 'dinein', customer, lines, note: str(b.note, 300),
+    table: off ? table : table.padStart(2, '0'), type, customer, lines, note: str(b.note, 300),
     total: Math.round(num(b.total, 0, 1e7)), eta: Math.round(num(b.eta, 5, 180)),
   };
 }
