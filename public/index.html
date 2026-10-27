@@ -1540,13 +1540,14 @@ const cartCount=()=>S.cart.reduce((t,l)=>t+l.qty,0);
 const sub=()=>S.cart.reduce((t,l)=>t+l.qty*unit(BY[l.id],l.sel),0);
 /* Kitchen feed: every table's tickets, shared through this browser's storage */
 const FEED_KEY='kaaram-kds-v1',HB_KEY='kaaram-kds-hb',TABLES=20;
-function readFeed(){try{const f=JSON.parse(lsGet(FEED_KEY)||'null');if(f&&Array.isArray(f.tickets))return f}catch(e){}return {tickets:[],seq:2416,seeded:false}}
+let NETFEED=false;/* true when the server stores orders, so every device shares one kitchen feed */
+function readFeed(){if(NETFEED)return FEED;try{const f=JSON.parse(lsGet(FEED_KEY)||'null');if(f&&Array.isArray(f.tickets))return f}catch(e){}return {tickets:[],seq:2416,seeded:false}}
 let FEED=readFeed(),lastFeedStr=lsGet(FEED_KEY)||'',HB=+lsGet(HB_KEY)||0;
-function writeFeed(){const cut=Date.now()-3*3600e3;FEED.tickets=FEED.tickets.filter(t=>t.st<3||(t.ts[3]||t.at)>cut).slice(-80);lastFeedStr=JSON.stringify(FEED);lsSet(FEED_KEY,lastFeedStr)}
+function writeFeed(){if(NETFEED)return;const cut=Date.now()-3*3600e3;FEED.tickets=FEED.tickets.filter(t=>t.st<3||(t.ts[3]||t.at)>cut).slice(-80);lastFeedStr=JSON.stringify(FEED);lsSet(FEED_KEY,lastFeedStr)}
 const ticketOf=no=>FEED.tickets.find(t=>t.no===no);
 /* A guest's tracker follows the kitchen once a kitchen display is open in this browser (or has touched the ticket); otherwise it runs on a demo timer */
 const followsKitchen=o=>{const t=ticketOf(o.no);return t&&(t.kitchen||Date.now()-HB<20000)?t:null};
-const statusIdx=o=>{const k=followsKitchen(o);if(k)return k.st;const t=(Date.now()-o.at)/1000;return t<12?0:t<35?1:t<55?2:3};
+const statusIdx=o=>{const k=followsKitchen(o);if(k)return k.st;if(NETFEED)return 0;const t=(Date.now()-o.at)/1000;return t<12?0:t<35?1:t<55?2:3};
 const activeOrders=()=>S.orders.filter(o=>statusIdx(o)<3);
 const fmtTime=t=>new Date(t).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 const fmtDate=t=>new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
@@ -1753,13 +1754,27 @@ function openWaiter(){
 }
 function placeOrder(btn){
  if(!cartCount())return;
+ const lbl=btn.querySelector('span').textContent;
  btn.disabled=true;btn.querySelector('span').textContent='Sending to kitchen…';
- setTimeout(()=>{
+ setTimeout(async()=>{
   const lines=S.cart.map(l=>{const it=BY[l.id];return {id:l.id,name:it.name,qty:l.qty,unit:unit(it,l.sel),opt:summary(it,l.sel),note:l.note,v:it.v}});
   const st=lines.reduce((t,l)=>t+l.qty*l.unit,0);
-  FEED=readFeed();FEED.seq=(FEED.seq||2416)+1;
-  const o={no:'KK-'+FEED.seq,at:Date.now(),lines,tip:S.tip,note:S.note,total:Math.round(st*(1+GST)+S.tip),eta:Math.max(...lines.map(l=>BY[l.id].m))+5};
-  FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta:o.eta,lines,note:S.note,st:0,ts:[o.at],kitchen:false,sample:false,total:o.total});writeFeed();
+  const total=Math.round(st*(1+GST)+S.tip),eta=Math.max(...lines.map(l=>BY[l.id].m))+5;
+  let o;
+  if(NETFEED){
+   try{
+    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({table:TABLE,lines,note:S.note,total,eta})});
+    if(r.status===429){toast('Too many orders at once. Please wait a moment and try again.');throw 0}
+    if(!r.ok)throw 0;
+    const j=await r.json();
+    o={no:j.no,at:j.at,lines,tip:S.tip,note:S.note,total,eta};
+    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta,lines,note:S.note,st:0,ts:[o.at],kitchen:true,sample:false,total});
+   }catch(e){if(e!==0)toast('Couldn’t reach the kitchen. Please try again.');btn.disabled=false;btn.querySelector('span').textContent=lbl;return}
+  }else{
+   FEED=readFeed();FEED.seq=(FEED.seq||2416)+1;
+   o={no:'KK-'+FEED.seq,at:Date.now(),lines,tip:S.tip,note:S.note,total,eta};
+   FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta:o.eta,lines,note:S.note,st:0,ts:[o.at],kitchen:false,sample:false,total:o.total});writeFeed();
+  }
   S.orders.push(o);S.cart=[];S.note='';S.tip=0;S.bill=false;save();refreshCtls();renderPanel();renderBar();openPlaced(o);
  },900);
 }
@@ -1799,10 +1814,44 @@ async function loadServerMenu(){
  if(!HTTP)return;
  try{
   const r=await fetch('/api/menu',{cache:'no-store'});if(!r.ok)return;
-  SERVER=true;const j=await r.json();
+  SERVER=true;NETFEED=r.headers.get('X-Kaaram-Storage')==='1';if(NETFEED)FEED={tickets:[],seq:0,seeded:true};const j=await r.json();
   if(j&&(j.updated||0)>(DATA.updated||0)){DATA=cleanMenu(j);if(!A.on){M=DATA}reindex();renderAll()}
  }catch(e){}
 }
+let kPrimed=false,kSig='',pollBusy=false;
+async function netPatch(t){
+ try{
+  const r=await fetch('/api/orders',{method:'PATCH',headers:{'Content-Type':'application/json',...authHdr()},body:JSON.stringify({no:t.no,st:t.st})});
+  if(r.status===401){toast('Your session expired. Sign in again.');signOut()}
+  else if(!r.ok)toast('Couldn’t update that ticket. Check your connection.');
+ }catch(e){toast('Couldn’t update that ticket. Check your connection.')}
+}
+/* Poll the shared order feed: staff on the kitchen view get every ticket; guests get the status of their own orders */
+async function pollOrders(){
+ if(!NETFEED||pollBusy)return;
+ const kit=A.on&&A.view==='kitchen',nos=S.orders.map(o=>o.no);
+ if(!kit&&(!nos.length||document.hidden))return;
+ pollBusy=true;
+ try{
+  if(kit){
+   const r=await fetch('/api/orders',{headers:authHdr(),cache:'no-store'});
+   if(r.status===401){toast('Your session expired. Sign in again.');signOut();return}
+   if(r.ok){
+    const list=await r.json(),sg=JSON.stringify(list.map(t=>[t.no,t.st]));
+    if(!kPrimed){FEED.tickets=list;seen=new Set(list.map(t=>t.no));kPrimed=true;kSig=sg;renderKitchen();renderAbar()}
+    else if(sg!==kSig){kSig=sg;FEED.tickets=list;feedChanged()}
+   }
+  }else{
+   const r=await fetch('/api/orders?nos='+encodeURIComponent(nos.slice(-20).join(',')),{cache:'no-store'});
+   if(r.ok)(await r.json()).forEach(u=>{
+    const t=ticketOf(u.no);
+    if(t){t.st=u.st;t.ts=u.ts&&u.ts.length?u.ts:t.ts}
+    else FEED.tickets.push({no:u.no,table:TABLE,at:(S.orders.find(o=>o.no===u.no)||{}).at||Date.now(),lines:[],st:u.st,ts:u.ts||[],kitchen:true,sample:false});
+   });
+  }
+ }catch(e){}finally{pollBusy=false}
+}
+setInterval(pollOrders,3000);
 let loginFails=0;
 function openSignin(next){
  A.next=next==='kitchen'?'kitchen':'edit';
@@ -2009,15 +2058,15 @@ function makeTicket(table,at,st){
  return {no:'KK-'+FEED.seq,table:String(table).padStart(2,'0'),at,eta:Math.max(15,...lines.map(l=>(BY[l.id]||{m:15}).m))+5,lines,note:'',st,ts,kitchen:true,sample:true,total};
 }
 function seedExamples(){
- if(FEED.seeded||!M.items.length)return;FEED.seeded=true;const now=Date.now();
+ if(NETFEED||FEED.seeded||!M.items.length)return;FEED.seeded=true;const now=Date.now();
  [[3,13*60,1],[12,6*60,0],[5,11*60,1],[12,40,0],[8,17*60,2],[14,2*60,0]].forEach(([tb,ago,st])=>FEED.tickets.push(makeTicket(tb,now-ago*1000,st)));
  writeFeed();
 }
 function chime(){if(!soundOn||!audio)return;try{const t=audio.currentTime;[880,1320].forEach((f,i)=>{const o=audio.createOscillator(),g=audio.createGain(),s=t+i*.18;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.22,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.32);o.connect(g).connect(audio.destination);o.start(s);o.stop(s+.34)})}catch(e){}}
-function scheduleDemo(){clearTimeout(demoT);if(!demoOn||A.view!=='kitchen'||!A.on)return;demoT=setTimeout(()=>{FEED=readFeed();FEED.tickets.push(makeTicket(1+Math.floor(Math.random()*TABLES),Date.now(),0));writeFeed();feedChanged();scheduleDemo()},15000+Math.random()*15000)}
+function scheduleDemo(){clearTimeout(demoT);if(NETFEED||!demoOn||A.view!=='kitchen'||!A.on)return;demoT=setTimeout(()=>{FEED=readFeed();FEED.tickets.push(makeTicket(1+Math.floor(Math.random()*TABLES),Date.now(),0));writeFeed();feedChanged();scheduleDemo()},15000+Math.random()*15000)}
 function stopKitchen(){clearTimeout(demoT);demoT=null;if(wake){try{wake.release()}catch(e){}wake=null}}
 function startKitchen(){
- seedExamples();seen=new Set(FEED.tickets.map(t=>t.no));HB=Date.now();lsSet(HB_KEY,String(HB));
+ kPrimed=false;seedExamples();seen=new Set(FEED.tickets.map(t=>t.no));HB=Date.now();lsSet(HB_KEY,String(HB));
  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{})}catch(e){}
  scheduleDemo();
 }
@@ -2044,11 +2093,11 @@ function renderKitchen(){
  const tables=Object.keys(byTable).sort((a,b)=>{const pa=byTable[a].find(t=>t.st<2),pb=byTable[b].find(t=>t.st<2);return (pa?pa.at:9e15)-(pb?pb.at:9e15)||byTable[a][0].at-byTable[b][0].at});
  const samples=FEED.tickets.some(t=>t.sample);
  let h=`<section class="kds"><div class="kds-head"><div><span class="eyebrow">Kitchen display</span><h2>Incoming orders</h2>
-   <p>Oldest first. Orders sent from the menu in another tab of this browser arrive here live, and guests see each status change on their phone screen.</p></div>
+   <p>${NETFEED?'Oldest first. Orders from every table arrive here within a few seconds, and guests see each status change on their own phone.':'Oldest first. Orders sent from the menu in another tab of this browser arrive here live, and guests see each status change on their phone screen.'}</p></div>
   <div class="kds-ctrl"><div class="seg" role="group" aria-label="Layout"><button data-act="k-view" data-v="tables" aria-pressed="${KV==='tables'}">By table</button><button data-act="k-view" data-v="board" aria-pressed="${KV==='board'}">By status</button></div>
    <button class="chip" data-act="k-sound" aria-pressed="${soundOn}">${ic.sound}Sound</button>
-   <button class="chip" data-act="k-demo" aria-pressed="${demoOn}"><span class="switch"></span>Simulate other tables</button>
-   ${samples?'<button class="chip" data-act="k-clear">Clear examples</button>':''}</div></div>
+   ${NETFEED?'':`<button class="chip" data-act="k-demo" aria-pressed="${demoOn}"><span class="switch"></span>Simulate other tables</button>`}
+   ${samples&&!NETFEED?'<button class="chip" data-act="k-clear">Clear examples</button>':''}</div></div>
  <div class="kstats">
   <div class="kstat"><small>Open tickets</small><b>${open.length}</b></div>
   <div class="kstat"><small>Not started</small><b class="${open.some(t=>t.st===0&&now-t.at>=5*60e3)?'warn':''}">${open.filter(t=>t.st===0).length}</b></div>
@@ -2130,7 +2179,7 @@ document.addEventListener('click',e=>{
   case 'k-clear':FEED=readFeed();FEED.tickets=FEED.tickets.filter(t=>!t.sample);writeFeed();renderKitchen();renderAbar();toast('Example tickets cleared');break;
   case 'k-bump':case 'k-undo':{FEED=readFeed();const t=ticketOf(el.dataset.no);if(!t)break;
    if(a==='k-bump'){t.st=Math.min(3,t.st+1);t.ts[t.st]=Date.now()}else{t.st=Math.max(0,t.st-1);t.ts.length=t.st+1}
-   t.kitchen=true;writeFeed();renderKitchen();renderAbar();if(a==='k-bump'&&t.st===3)toast(`Table ${t.table} served · ${t.no}`);break}
+   t.kitchen=true;writeFeed();renderKitchen();renderAbar();if(a==='k-bump'&&t.st===3)toast(`Table ${t.table} served · ${t.no}`);if(NETFEED)netPatch(t);break}
   case 'a-publish':publishMenu(el);break;
   case 'a-discard':openConfirm('Discard your changes?',`${A.changes} unpublished change${A.changes===1?'':'s'} will be lost. The live menu stays as it is.`,'Discard changes',()=>{M=clone(DATA);A.changes=0;reindex();lsSet(DRAFT,null);closeSheet();renderAll();toast('Changes discarded')});break;
   case 'a-signout':signOut();break;

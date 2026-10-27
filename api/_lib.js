@@ -27,6 +27,13 @@ function challenge(res) {
   res.end('Authentication required');
 }
 
+// 401 without WWW-Authenticate, so page scripts never trigger the browser's own login dialog.
+function deny(res) {
+  res.statusCode = 401;
+  res.setHeader('Cache-Control', 'no-store');
+  res.end('Unauthorized');
+}
+
 // Storage: Upstash Redis over REST (Vercel Marketplace "Upstash Redis" / legacy Vercel KV env names both work).
 function redisConf() {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -44,6 +51,18 @@ async function redis(cmd) {
   if (!r.ok) throw new Error('redis ' + r.status);
   return (await r.json()).result;
 }
+async function pipe(cmds) {
+  const c = redisConf();
+  if (!c) throw Object.assign(new Error('no storage'), { code: 'NO_STORAGE' });
+  const r = await fetch(c.url + '/pipeline', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + c.token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(cmds),
+  });
+  if (!r.ok) throw new Error('redis ' + r.status);
+  return (await r.json()).map((x) => x.result);
+}
+const clientIp = (req) => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
 const loadMenu = async () => redis(['GET', KEY]);
 const saveMenu = async (json) => redis(['SET', KEY, json]);
 
@@ -56,4 +75,4 @@ function readBody(req, max = 2 * 1024 * 1024) {
   });
 }
 
-module.exports = { isAuthed, challenge, loadMenu, saveMenu, readBody, redisConf };
+module.exports = { isAuthed, challenge, deny, redis, pipe, clientIp, loadMenu, saveMenu, readBody, redisConf };

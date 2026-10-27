@@ -1,4 +1,4 @@
-const { isAuthed, challenge, loadMenu, saveMenu, readBody } = require('./_lib');
+const { isAuthed, deny, redisConf, loadMenu, saveMenu, readBody } = require('./_lib');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -8,10 +8,11 @@ module.exports = async (req, res) => {
       let v = null;
       try { v = await loadMenu(); } catch (e) { if (e.code !== 'NO_STORAGE') throw e; }
       res.setHeader('Content-Type', 'application/json');
+      res.setHeader('X-Kaaram-Storage', redisConf() ? '1' : '0');  // tells the page whether shared orders are available
       return res.end(v || '{}');           // {} = "no published menu yet": page uses its built-in one
     }
     if (req.method === 'PUT') {
-      if (!isAuthed(req)) return challenge(res);
+      if (!isAuthed(req)) return deny(res);
       let obj;
       try {
         obj = JSON.parse(await readBody(req));
