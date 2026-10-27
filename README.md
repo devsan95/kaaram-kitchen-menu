@@ -24,3 +24,10 @@ Vercel serves everything over HTTPS, so Basic Auth credentials are protected in 
 - Guests: **Ask for bill → Print**. Staff: receipt icon on a table card in the Kitchen tab (By table view).
 - Kitchen tab → **Test print** prints a sample bill without placing an order. Use it the first time a printer is connected.
 - Receipt printer (80 mm): choose the 80 mm paper size, margins "None", turn off headers/footers. Normal printer: A4. Printing to "Save as PDF" also works.
+
+## Takeaway / delivery
+- Link: `https://<your-site>/takeaway` (or `/#takeaway`). The guest picks dishes, taps Checkout, and enters name, phone, delivery address and a Google Maps location (pasted link, or "Use my current location").
+- Validation runs in the page and again on the server (`api/orders.js`): Indian or international phone number, address of at least 10 characters, and only Google Maps links or plain `lat,lng` are accepted.
+- The kitchen tab shows each takeaway as its own card with the customer's name, a tap-to-call phone link, the address and an "Open in Google Maps" link. Steps are New, Cooking, Packed, Dispatched. Print bill includes the customer's details.
+- Payment is cash or UPI on delivery. There is no delivery fee or distance check yet.
+- Customer details are stored in Redis with the order and removed with it (3 hours after dispatch, or 12 hours at the latest). Guests can only read the status of their own order numbers.

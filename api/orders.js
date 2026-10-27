@@ -7,13 +7,42 @@ const { isAuthed, deny, pipe, clientIp, readBody } = require('./_lib');
 
 const HASH = 'kaaram-orders', SEQ = 'kaaram-seq', VER = 'kaaram-ver';  // VER changes on every write, so tablets can ask "anything new?" cheaply
 const KEEP_SERVED_MS = 3 * 3600e3, KEEP_ANY_MS = 12 * 3600e3, MAX_OPEN = 500, RATE_PER_MIN = 12;
-const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').slice(0, n) : '');
 const num = (v, lo, hi) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; };
+
+function cleanPhone(v) {
+  const d = str(v, 30).replace(/[\s\-().]/g, '');
+  const m = /^(?:\+?91|0)?([6-9]\d{9})$/.exec(d);
+  if (m) return '+91' + m[1];
+  return /^\+\d{8,15}$/.test(d) ? d : '';
+}
+// Only Google Maps links (or plain lat,lng) are accepted, always rebuilt as https URLs.
+function cleanMap(v) {
+  v = str(v, 500).trim();
+  const c = /^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/.exec(v);
+  if (c) return Math.abs(+c[1]) <= 90 && Math.abs(+c[2]) <= 180 ? 'https://www.google.com/maps?q=' + +c[1] + ',' + +c[2] : '';
+  try {
+    const u = new URL(v);
+    if (u.protocol !== 'https:') return '';
+    const h = u.hostname.toLowerCase();
+    if (/^(www\.)?google\.(com|co\.in)$/.test(h) && u.pathname.startsWith('/maps')) return u.href;
+    if (h === 'maps.google.com' || h === 'maps.app.goo.gl' || (h === 'goo.gl' && u.pathname.startsWith('/maps'))) return u.href;
+  } catch (e) { /* not a URL */ }
+  return '';
+}
+function cleanCustomer(c) {
+  if (!c || typeof c !== 'object') return null;
+  const name = str(c.name, 60).trim(), address = str(c.address, 300).trim(), phone = cleanPhone(c.phone), map = cleanMap(c.map);
+  return name.length >= 2 && address.length >= 10 && phone && map ? { name, phone, address, map } : null;
+}
 
 function cleanOrder(b) {
   if (!b || typeof b !== 'object' || !Array.isArray(b.lines) || !b.lines.length || b.lines.length > 40) return null;
-  const table = String(b.table || '');
-  if (!/^\d{1,2}$/.test(table)) return null;
+  const ta = b.type === 'takeaway';
+  const customer = ta ? cleanCustomer(b.customer) : null;
+  if (ta && !customer) return null;
+  const table = ta ? 'TA' : String(b.table || '');
+  if (!ta && !/^\d{1,2}$/.test(table)) return null;
   const lines = [];
   for (const l of b.lines) {
     if (!l || typeof l !== 'object') return null;
@@ -25,7 +54,7 @@ function cleanOrder(b) {
     });
   }
   return {
-    table: table.padStart(2, '0'), lines, note: str(b.note, 300),
+    table: ta ? 'TA' : table.padStart(2, '0'), type: ta ? 'takeaway' : 'dinein', customer, lines, note: str(b.note, 300),
     total: Math.round(num(b.total, 0, 1e7)), eta: Math.round(num(b.eta, 5, 180)),
   };
 }
@@ -58,7 +87,7 @@ module.exports = async (req, res) => {
       if (hits > RATE_PER_MIN) return fail(429, 'slow down');
       if (open > MAX_OPEN && (await loadAll()).length > MAX_OPEN) return fail(503, 'kitchen is full');
       const at = Date.now(), no = 'KK-' + (2416 + seq);
-      const t = { no, table: o.table, at, eta: o.eta, lines: o.lines, note: o.note, st: 0, ts: [at], kitchen: true, sample: false, total: o.total };
+      const t = { no, table: o.table, type: o.type, customer: o.customer, at, eta: o.eta, lines: o.lines, note: o.note, st: 0, ts: [at], kitchen: true, sample: false, total: o.total };
       await pipe([['HSET', HASH, no, JSON.stringify(t)], ['INCR', VER]]);
       return res.end(JSON.stringify({ no, at }));
     }
