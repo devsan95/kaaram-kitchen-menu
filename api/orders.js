@@ -5,8 +5,8 @@
 //   PATCH (staff)   { no, st }  move a ticket (0 new, 1 cooking, 2 ready, 3 served)
 const { isAuthed, deny, pipe, clientIp, readBody } = require('./_lib');
 
-const HASH = 'kaaram-orders', SEQ = 'kaaram-seq';
-const KEEP_SERVED_MS = 3 * 3600e3, MAX_OPEN = 300, RATE_PER_MIN = 12;
+const HASH = 'kaaram-orders', SEQ = 'kaaram-seq', VER = 'kaaram-ver';  // VER changes on every write, so tablets can ask "anything new?" cheaply
+const KEEP_SERVED_MS = 3 * 3600e3, KEEP_ANY_MS = 12 * 3600e3, MAX_OPEN = 500, RATE_PER_MIN = 12;
 const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 const num = (v, lo, hi) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; };
 
@@ -30,6 +30,18 @@ function cleanOrder(b) {
   };
 }
 
+// Drops served tickets after 3 h and anything (even if never bumped) after 12 h, so forgotten tickets can't fill the board.
+async function loadAll() {
+  const [flat] = await pipe([['HGETALL', HASH]]);
+  const now = Date.now(), list = [], stale = [];
+  for (let i = 0; i < flat.length; i += 2) {
+    let t; try { t = JSON.parse(flat[i + 1]); } catch (e) { stale.push(flat[i]); continue; }
+    if ((t.st === 3 && now - (t.ts[3] || t.at) > KEEP_SERVED_MS) || now - t.at > KEEP_ANY_MS) stale.push(flat[i]); else list.push(t);
+  }
+  if (stale.length) await pipe([['HDEL', HASH, ...stale], ['INCR', VER]]);
+  return list;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json');
@@ -44,10 +56,10 @@ module.exports = async (req, res) => {
       const rl = 'kaaram-rl:' + clientIp(req) + ':' + minute;
       const [hits, , open, seq] = await pipe([['INCR', rl], ['EXPIRE', rl, 120], ['HLEN', HASH], ['INCR', SEQ]]);
       if (hits > RATE_PER_MIN) return fail(429, 'slow down');
-      if (open > MAX_OPEN) return fail(503, 'kitchen is full');
+      if (open > MAX_OPEN && (await loadAll()).length > MAX_OPEN) return fail(503, 'kitchen is full');
       const at = Date.now(), no = 'KK-' + (2416 + seq);
       const t = { no, table: o.table, at, eta: o.eta, lines: o.lines, note: o.note, st: 0, ts: [at], kitchen: true, sample: false, total: o.total };
-      await pipe([['HSET', HASH, no, JSON.stringify(t)]]);
+      await pipe([['HSET', HASH, no, JSON.stringify(t)], ['INCR', VER]]);
       return res.end(JSON.stringify({ no, at }));
     }
 
@@ -62,16 +74,13 @@ module.exports = async (req, res) => {
           return t ? { no, st: t.st, ts: t.ts } : { no, st: 3, ts: [], gone: true };
         })));
       }
-      if (!isAuthed(req)) return deny(res);     // staff: the full feed
-      const [flat] = await pipe([['HGETALL', HASH]]);
-      const now = Date.now(), list = [], stale = [];
-      for (let i = 0; i < flat.length; i += 2) {
-        let t; try { t = JSON.parse(flat[i + 1]); } catch (e) { stale.push(flat[i]); continue; }
-        if (t.st === 3 && now - (t.ts[3] || t.at) > KEEP_SERVED_MS) stale.push(flat[i]); else list.push(t);
-      }
-      if (stale.length) pipe([['HDEL', HASH, ...stale]]).catch(() => {});
-      list.sort((a, b) => a.at - b.at);
-      return res.end(JSON.stringify(list));
+      if (!isAuthed(req)) return deny(res);     // staff: the full feed, or just "unchanged" if their version is current
+      const [cur] = await pipe([['GET', VER]]);
+      const v = String(cur || 0);
+      if (q.get('v') === v) return res.end(JSON.stringify({ v, same: true }));
+      const tickets = await loadAll();
+      tickets.sort((a, b) => a.at - b.at);
+      return res.end(JSON.stringify({ v, tickets }));
     }
 
     if (req.method === 'PATCH') {
@@ -83,7 +92,7 @@ module.exports = async (req, res) => {
       const t = JSON.parse(raw);
       if (b.st > t.st) t.ts[b.st] = Date.now(); else if (b.st < t.st) t.ts.length = b.st + 1;
       t.st = b.st; t.kitchen = true;
-      await pipe([['HSET', HASH, b.no, JSON.stringify(t)]]);
+      await pipe([['HSET', HASH, b.no, JSON.stringify(t)], ['INCR', VER]]);
       return res.end(JSON.stringify({ ok: true }));
     }
 

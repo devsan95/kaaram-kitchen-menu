@@ -7,6 +7,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' || req.method === 'HEAD') {
       let v = null;
       try { v = await loadMenu(); } catch (e) { if (e.code !== 'NO_STORAGE') throw e; }
+      res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=40');  // edge-cached: guest page loads cost ~no Redis commands
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('X-Kaaram-Storage', redisConf() ? '1' : '0');  // tells the page whether shared orders are available
       return res.end(v || '{}');           // {} = "no published menu yet": page uses its built-in one

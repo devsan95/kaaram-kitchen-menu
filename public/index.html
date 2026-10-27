@@ -1848,30 +1848,37 @@ async function loadServerMenu(){
   if(j&&(j.updated||0)>(DATA.updated||0)){DATA=cleanMenu(j);if(!A.on){M=DATA}reindex();renderAll()}
  }catch(e){}
 }
-let kPrimed=false,kSig='',pollBusy=false;
+let kPrimed=false,kVer='',pollBusy=false,nextPollAt=0,lastChangeAt=Date.now();
 async function netPatch(t){
  try{
   const r=await fetch('/api/orders',{method:'PATCH',headers:{'Content-Type':'application/json',...authHdr()},body:JSON.stringify({no:t.no,st:t.st})});
   if(r.status===401){toast('Your session expired. Sign in again.');signOut()}
   else if(!r.ok)toast('Couldn’t update that ticket. Check your connection.');
+  else{lastChangeAt=Date.now();nextPollAt=0}
  }catch(e){toast('Couldn’t update that ticket. Check your connection.')}
 }
-/* Poll the shared order feed: staff on the kitchen view get every ticket; guests get the status of their own orders */
+/* Poll the shared order feed. Staff on the kitchen view ask "anything new?" every 3 s (8 s after 2 quiet minutes, 15 s after 10);
+   guests check their own unserved orders every 10 s, and only while the page is visible. This keeps Redis usage low. */
 async function pollOrders(){
- if(!NETFEED||pollBusy)return;
- const kit=A.on&&A.view==='kitchen',nos=S.orders.map(o=>o.no);
+ if(!NETFEED||pollBusy||Date.now()<nextPollAt)return;
+ const kit=A.on&&A.view==='kitchen',nos=S.orders.filter(o=>statusIdx(o)<3).map(o=>o.no);
  if(!kit&&(!nos.length||document.hidden))return;
  pollBusy=true;
  try{
   if(kit){
-   const r=await fetch('/api/orders',{headers:authHdr(),cache:'no-store'});
+   {const q=Date.now()-lastChangeAt;nextPollAt=Date.now()+(q>600000?15000:q>120000?8000:3000)}
+   const r=await fetch('/api/orders?v='+encodeURIComponent(kVer),{headers:authHdr(),cache:'no-store'});
    if(r.status===401){toast('Your session expired. Sign in again.');signOut();return}
    if(r.ok){
-    const list=await r.json(),sg=JSON.stringify(list.map(t=>[t.no,t.st]));
-    if(!kPrimed){FEED.tickets=list;seen=new Set(list.map(t=>t.no));kPrimed=true;kSig=sg;renderKitchen();renderAbar()}
-    else if(sg!==kSig){kSig=sg;FEED.tickets=list;feedChanged()}
+    const j=await r.json();
+    if(!j.same){
+     kVer=j.v;FEED.tickets=j.tickets;
+     if(!kPrimed){seen=new Set(j.tickets.map(t=>t.no));kPrimed=true;renderKitchen();renderAbar()}
+     else{lastChangeAt=Date.now();feedChanged()}
+    }
    }
   }else{
+   nextPollAt=Date.now()+10000;
    const r=await fetch('/api/orders?nos='+encodeURIComponent(nos.slice(-20).join(',')),{cache:'no-store'});
    if(r.ok)(await r.json()).forEach(u=>{
     const t=ticketOf(u.no);
@@ -1881,7 +1888,8 @@ async function pollOrders(){
   }
  }catch(e){}finally{pollBusy=false}
 }
-setInterval(pollOrders,3000);
+setInterval(pollOrders,1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)nextPollAt=0});
 let loginFails=0;
 function openSignin(next){
  A.next=next==='kitchen'?'kitchen':'edit';
@@ -2096,7 +2104,7 @@ function chime(){if(!soundOn||!audio)return;try{const t=audio.currentTime;[880,1
 function scheduleDemo(){clearTimeout(demoT);if(NETFEED||!demoOn||A.view!=='kitchen'||!A.on)return;demoT=setTimeout(()=>{FEED=readFeed();FEED.tickets.push(makeTicket(1+Math.floor(Math.random()*TABLES),Date.now(),0));writeFeed();feedChanged();scheduleDemo()},15000+Math.random()*15000)}
 function stopKitchen(){clearTimeout(demoT);demoT=null;if(wake){try{wake.release()}catch(e){}wake=null}}
 function startKitchen(){
- kPrimed=false;seedExamples();seen=new Set(FEED.tickets.map(t=>t.no));HB=Date.now();lsSet(HB_KEY,String(HB));
+ kPrimed=false;kVer='';lastChangeAt=Date.now();nextPollAt=0;seedExamples();seen=new Set(FEED.tickets.map(t=>t.no));HB=Date.now();lsSet(HB_KEY,String(HB));
  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{wake=w}).catch(()=>{})}catch(e){}
  scheduleDemo();
 }
