@@ -1732,6 +1732,36 @@ function openOrders(){
   <div class="sheet-foot"><button class="btn ghost" data-act="bill">${ic.receipt}Ask for bill</button><button class="btn primary" data-act="close">Order more</button></div>`,'orders','Your orders');
  const s=body.querySelector('.sheet-scroll');if(s&&sc)s.scrollTop=sc;
 }
+/* ---------- Print bill ---------- */
+function billModel(orders){
+ const all={};orders.forEach(o=>o.lines.forEach(l=>{const k=l.name+(l.opt?' ('+l.opt+')':'');all[k]=all[k]||{q:0,amt:0};all[k].q+=l.qty;all[k].amt+=l.qty*l.unit}));
+ const rows=Object.entries(all).map(([n,x])=>({n,q:x.q,amt:x.amt}));
+ const st=rows.reduce((t,x)=>t+x.amt,0),tax=st*GST;
+ const tips=orders.reduce((t,o)=>t+(o.tip!=null?o.tip:Math.max(0,Math.round(o.total-o.lines.reduce((u,l)=>u+l.qty*l.unit,0)*(1+GST)))),0);
+ return {rows,st,tax,tips,total:st+tax+tips};
+}
+function printBill(orders,table){
+ if(!orders.length){toast('Nothing to print yet.');return}
+ const b=billModel(orders),when=new Date().toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+ const nums=orders.map(o=>o.no).join(', ');
+ const html='<!doctype html><html><head><meta charset="utf-8"><title>Bill · Table '+esc(table)+'</title><style>'
+  +'@page{margin:8mm}*{box-sizing:border-box}body{font:13px/1.45 "Courier New",ui-monospace,monospace;color:#000;margin:0 auto;max-width:78mm;padding:4px}'
+  +'h1{font:700 20px/1.1 Georgia,serif;text-align:center;margin:0}p{margin:0}.c{text-align:center}.m{color:#444;font-size:11.5px}'
+  +'hr{border:0;border-top:1px dashed #000;margin:8px 0}.r{display:flex;justify-content:space-between;gap:10px}.r span:first-child{flex:1}.r span:last-child{white-space:nowrap}'
+  +'.t{font-weight:700;font-size:15px}</style></head><body>'
+  +'<h1>Kaaram Kitchen</h1><p class="c m">Andhra &amp; Hyderabadi · Banjara Hills</p><hr>'
+  +'<div class="r"><span>Table '+esc(table)+'</span><span>'+esc(when)+'</span></div><p class="m">Orders: '+esc(nums)+'</p><hr>'
+  +b.rows.map(x=>'<div class="r"><span>'+x.q+' × '+esc(x.n)+'</span><span>'+rs(x.amt)+'</span></div>').join('')
+  +'<hr><div class="r"><span>Item total</span><span>'+rs(b.st)+'</span></div>'
+  +'<div class="r"><span>CGST 2.5%</span><span>'+rs(b.tax/2)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(b.tax/2)+'</span></div>'
+  +(b.tips?'<div class="r"><span>Staff tip</span><span>'+rs(b.tips)+'</span></div>':'')
+  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(b.total)+'</span></div><hr><p class="c">Thank you for dining with us!</p></body></html>';
+ const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+ document.body.appendChild(f);
+ const d=f.contentWindow.document;d.open();d.write(html);d.close();
+ const go=()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){const w=window.open('','_blank');if(w){w.document.write(html);w.document.close();w.focus();w.print()}else toast('Printing isn’t available in this browser.')}setTimeout(()=>f.remove(),60000)};
+ setTimeout(go,250);
+}
 function openBill(){
  const all={};S.orders.forEach(o=>o.lines.forEach(l=>{const k=l.name+(l.opt?' ('+l.opt+')':'');all[k]=all[k]||{q:0,amt:0};all[k].q+=l.qty;all[k].amt+=l.qty*l.unit}));
  const st=Object.values(all).reduce((t,x)=>t+x.amt,0),tax=st*GST,tips=S.orders.reduce((t,o)=>t+(o.tip||0),0),total=st+tax+tips;
@@ -1742,7 +1772,7 @@ function openBill(){
   <span class="field-label" style="margin-top:18px">How would you like to pay?</span>
   <div class="pay" role="radiogroup">${[['upi','UPI','Scan the QR on the bill folder'],['card','Card','We’ll bring the machine to you'],['cash','Cash','Pay your server']].map(([v,n,d],i)=>`<label for="pay-${v}"><input type="radio" name="pay" id="pay-${v}" value="${v}" ${i?'':'checked'}><span>${n}<small>${d}</small></span></label>`).join('')}</div>
   </div></div>
-  <div class="sheet-foot"><button class="btn primary" data-act="reqbill"><span>Request bill</span><span class="spread num">${rs(total)}</span></button></div>`,'bill','Your bill');
+  <div class="sheet-foot"><button class="btn ghost" data-act="print-bill" style="flex:none">${ic.receipt}Print</button><button class="btn primary" data-act="reqbill"><span>Request bill</span><span class="spread num">${rs(total)}</span></button></div>`,'bill','Your bill');
 }
 function openWaiter(){
  const R=[['server','Call a server',ic.bell,'Someone will come to your table'],['water','Water refill',ic.water,'Bottled or filtered'],['cutlery','Extra cutlery',ic.cutlery,'Plates, spoons, napkins'],['clean','Clean the table',ic.spark,'Clear plates and wipe down']];
@@ -2108,7 +2138,7 @@ function renderKitchen(){
  else if(KV==='tables'){
   h+=`<div class="ktables">${tables.map(tb=>{const ts=byTable[tb],cnt=[0,1,2].map(s=>ts.filter(t=>t.st===s).length),amt=ts.reduce((s,t)=>s+(t.total||0),0);
    return `<article class="ktable"><header><div class="tno"><small>Table</small>${tb}</div><div class="tmeta"><b>${ts.length} ticket${ts.length>1?'s':''}</b> · ${ts.reduce((s,t)=>s+t.lines.reduce((u,l)=>u+l.qty,0),0)} items<br>${rs(amt)} incl. GST</div>
-    <div class="tchips">${cnt.map((c,s)=>c?`<span class="kchip s${s}">${c} ${KST[s]}</span>`:'').join('')}</div></header>${ts.map(t=>ticketHTML(t,false)).join('')}</article>`}).join('')}</div>`;
+    <div class="tchips">${cnt.map((c,s)=>c?`<span class="kchip s${s}">${c} ${KST[s]}</span>`:'').join('')}<button class="kundo" style="width:34px;height:34px" data-act="k-print" data-table="${tb}" aria-label="Print bill for table ${tb}" title="Print bill">${ic.receipt}</button></div></header>${ts.map(t=>ticketHTML(t,false)).join('')}</article>`}).join('')}</div>`;
   const free=[];for(let i=1;i<=TABLES;i++){const k=String(i).padStart(2,'0');if(!byTable[k])free.push(k)}
   if(free.length)h+=`<div class="kfree">No open orders: ${free.map(f=>`<span>T${f}</span>`).join('')}</div>`;
  } else {
@@ -2163,6 +2193,8 @@ document.addEventListener('click',e=>{
   case 'place':placeOrder(el);break;
   case 'orders':openOrders();break;
   case 'bill':openBill();break;
+  case 'print-bill':printBill(S.orders,TABLE);break;
+  case 'k-print':printBill(FEED.tickets.filter(t=>t.table===el.dataset.table&&!t.sample),el.dataset.table);break;
   case 'reqbill':{const p=body.querySelector('input[name=pay]:checked')?.value;S.bill=true;save();closeSheet();toast(`Bill requested. A server is bringing it to Table ${TABLE}${p==='upi'?' with a UPI QR':''}.`);break}
   case 'waiter':openWaiter();break;
   case 'req':closeSheet();toast(`${el.dataset.label}: request sent for Table ${TABLE}`);break;
