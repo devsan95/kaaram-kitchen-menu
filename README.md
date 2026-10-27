@@ -1,6 +1,6 @@
 # Kaaram Kitchen: digital menu
 
-Static page (`public/index.html`) + three small Vercel serverless functions (`api/`).
+Static page (`public/index.html`) + four small Vercel serverless functions (menu, auth, admin, orders) (`api/`).
 Guests see the menu; staff sign in with HTTP Basic Auth at `/admin` to edit the menu and run the kitchen display.
 
 ## Deploy on Vercel
