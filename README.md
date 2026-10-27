@@ -25,6 +25,7 @@ Every screen has its own address, so refresh, back, forward and bookmarks work.
 Vercel serves everything over HTTPS, so Basic Auth credentials are protected in transit.
 
 ## How orders work
+- After a guest taps Place order, the order is held for 10 seconds with a countdown and a **Cancel order** button, then sent to the kitchen. Nothing reaches the kitchen during the hold. If the guest closes the page in those 10 seconds the order is not sent.
 - A guest's phone sends the order to `/api/orders`; the kitchen tablet (signed in at `/admin`, **Kitchen** tab) polls every 3 seconds, chimes on new tickets, and each bump (new, cooking, ready, served) is saved on the server.
 - Guests see their order's status update on their own phone, including after a page reload.
 - Guests can only read the status of the order numbers they hold; the full ticket list needs the staff login. Orders are rate-limited (12 per minute per IP) and served tickets are removed after 3 hours.

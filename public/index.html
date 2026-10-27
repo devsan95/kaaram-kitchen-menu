@@ -309,6 +309,17 @@ legend small{font-size:12px;color:var(--muted);font-weight:600}
 .pay span{flex:1;font-weight:600}
 .pay small{color:var(--muted);font-weight:500;display:block;font-size:12.5px}
 
+.hold{position:fixed;inset:0;z-index:200;background:rgba(10,18,13,.62);display:grid;place-items:center;padding:20px;animation:holdIn .15s ease-out}
+@keyframes holdIn{from{opacity:0}to{opacity:1}}
+.hold-card{background:var(--surface);color:var(--ink);border-radius:24px;padding:26px 22px 20px;width:min(360px,100%);text-align:center;display:grid;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.hold-card h2{margin:0;font-size:22px}.hold-card p{margin:0 0 6px;color:var(--muted);font-size:14.5px;line-height:1.4}.hold-card p b{color:var(--ink)}
+.hold-ring{position:relative;width:84px;height:84px;margin:0 auto 4px}
+.hold-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.hold-ring circle{fill:none;stroke-width:4}.hold-ring .bg{stroke:var(--line)}
+.hold-ring .fg{stroke:var(--turmeric);stroke-linecap:round;stroke-dasharray:132;stroke-dashoffset:0;animation:holdRing linear forwards}
+@keyframes holdRing{to{stroke-dashoffset:132}}
+.hold-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:28px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.hold{animation:none}}
 .toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;z-index:80;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:600;font-size:14px;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,.25);transition:all .3s cubic-bezier(.2,.85,.25,1);pointer-events:none}
 .toast.show{transform:translate(-50%,0);opacity:1}
 .toast .ico{color:var(--turmeric)}
@@ -1941,11 +1952,32 @@ function openWaiter(){
   ${S.orders.length?`<button class="btn ghost block" style="margin-top:12px" data-act="bill">${ic.receipt}Ask for the bill</button>`:''}
  </div></div>`,'waiter','Call a server');
 }
+/* An order is held for 10 seconds so an accidental tap can be cancelled; after that it goes to the kitchen. */
+const HOLD_SECS=10;let HOLD=null;
 function placeOrder(btn,cust){
- if(!cartCount())return;
+ if(!cartCount()||HOLD)return;
+ const end=Date.now()+HOLD_SECS*1000,el=document.createElement('div');
+ el.className='hold';el.setAttribute('role','alertdialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','holdT');
+ el.innerHTML=`<div class="hold-card"><div class="hold-ring"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="bg"/><circle cx="24" cy="24" r="21" class="fg" style="animation-duration:${HOLD_SECS}s"/></svg><b id="holdN">${HOLD_SECS}</b></div>
+  <h2 id="holdT">Order placed</h2><p>Going to the kitchen in <b id="holdS">${HOLD_SECS}</b> seconds. Tapped by mistake? Cancel now and nothing is sent.</p>
+  <button class="btn ghost block" data-act="hold-cancel">Cancel order</button></div>`;
+ document.body.appendChild(el);
+ const cb=el.querySelector('button');cb.focus();
+ const t=setInterval(()=>{
+  const left=Math.max(0,Math.ceil((end-Date.now())/1000));
+  const n=document.getElementById('holdN'),m=document.getElementById('holdS');if(n)n.textContent=left;if(m)m.textContent=left;
+  if(Date.now()>=end){clearInterval(t);HOLD=null;el.remove();sendOrder(btn,cust)}
+ },200);
+ HOLD={el,t};
+}
+function cancelHold(){
+ if(!HOLD)return;clearInterval(HOLD.t);HOLD.el.remove();HOLD=null;
+ toast('Order cancelled. Your items are still in the cart.');
+}
+function sendOrder(btn,cust){
  const lbl=btn.querySelector('span').textContent;
  btn.disabled=true;btn.querySelector('span').textContent=cust?'Placing your order…':'Sending to kitchen…';
- setTimeout(async()=>{
+ (async()=>{
   const lines=S.cart.map(l=>{const it=BY[l.id];return {id:l.id,name:it.name,qty:l.qty,unit:unit(it,l.sel),opt:summary(it,l.sel),note:l.note,v:it.v}});
   const st=lines.reduce((t,l)=>t+l.qty*l.unit,0);
   const total=Math.round(st*(1+GST)+S.tip),eta=Math.max(...lines.map(l=>BY[l.id].m))+5+(IS_DL?25:IS_PU?5:0);
@@ -1967,7 +1999,7 @@ function placeOrder(btn,cust){
    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta:o.eta,lines,note:S.note,st:0,ts:[o.at],kitchen:false,sample:false,total:o.total,...extra});writeFeed();
   }
   S.orders.push(o);S.cart=[];S.note='';S.tip=0;S.bill=false;save();refreshCtls();renderPanel();renderBar();openPlaced(o);
- },900);
+ })();
 }
 
 /* ---------- Admin: access ---------- */
@@ -2454,6 +2486,7 @@ document.addEventListener('click',e=>{
   case 'd-done':dvAct(el.dataset.no,'delivered');break;
   case 'd-undo':dvAct(el.dataset.no,'undo');break;
   case 'k-view':KV=el.dataset.v==='board'?'board':'tables';ssSet('kaaram-kv',KV);renderKitchen();break;
+  case 'hold-cancel':cancelHold();break;
   case 'k-sound':soundOn=!soundOn;if(soundOn&&!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)()}catch(_){soundOn=false;toast('Sound isn’t available in this browser.')}}
    if(audio&&audio.state==='suspended')audio.resume().catch(()=>{});chime();renderKitchen();break;
   case 'k-demo':demoOn=!demoOn;ssSet('kaaram-demo',demoOn?'1':null);scheduleDemo();renderKitchen();toast(demoOn?'A simulated order arrives every 15–30 seconds':'Simulated orders off');break;
