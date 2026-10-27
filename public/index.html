@@ -495,6 +495,7 @@ body.managing .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .tk-top .no{font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums}
 .tlabel{font-family:var(--f-display);font-weight:800;font-size:21px;line-height:1}
 .kchip{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:6px;background:var(--k-new-soft);color:var(--k-new);white-space:nowrap}
+.kchip.paid{background:var(--k-cook-soft);color:var(--k-cook)} .kchip.cash{background:var(--k-new-soft);color:var(--k-new)}
 .kchip.s1{background:var(--k-cook-soft);color:var(--k-cook)} .kchip.s2{background:var(--k-ready-soft);color:var(--k-ready)} .kchip.s3,.kchip.ex{background:var(--surface-2);color:var(--muted)}
 .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
 .timer.warn{color:var(--k-new)} .timer.late{color:var(--k-late)}
@@ -1647,7 +1648,7 @@ const cartCount=()=>S.cart.reduce((t,l)=>t+l.qty,0);
 const sub=()=>S.cart.reduce((t,l)=>t+l.qty*unit(BY[l.id],l.sel),0);
 /* Kitchen feed: every table's tickets, shared through this browser's storage */
 const FEED_KEY='kaaram-kds-v1',HB_KEY='kaaram-kds-hb',TABLES=20;
-let NETFEED=false;/* true when the server stores orders, so every device shares one kitchen feed */
+let NETFEED=false,PAYON=false,PAYING=false;/* true when the server stores orders, so every device shares one kitchen feed */
 function readFeed(){if(NETFEED)return FEED;try{const f=JSON.parse(lsGet(FEED_KEY)||'null');if(f&&Array.isArray(f.tickets))return f}catch(e){}return {tickets:[],seq:2416,seeded:false}}
 let FEED=readFeed(),lastFeedStr=lsGet(FEED_KEY)||'',HB=+lsGet(HB_KEY)||0;
 function writeFeed(){if(NETFEED)return;const cut=Date.now()-3*3600e3;FEED.tickets=FEED.tickets.filter(t=>t.st<3||(t.ts[3]||t.at)>cut).slice(-80);lastFeedStr=JSON.stringify(FEED);lsSet(FEED_KEY,lastFeedStr)}
@@ -1746,7 +1747,10 @@ function cartInner(where){
  <div class="bill"><div><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST 2.5%</span><span>${rs(tax/2)}</span></div><div class="muted"><span>SGST 2.5%</span><span>${rs(tax/2)}</span></div>${S.tip?`<div class="muted"><span>Staff tip</span><span>${rs(S.tip)}</span></div>`:''}<div class="total"><span>To pay</span><span>${rs(total)}</span></div></div>`;
  return h;
 }
-function placeBtn(){const n=cartCount();return `<button class="btn primary block" data-act="place" ${n?'':'disabled'}><span>${IS_OFF?'Checkout':'Send to kitchen'}</span><span class="spread num">${n?rs(sub()*(1+GST)+S.tip):''}</span>${ic.arrow}</button><p class="fine">${IS_DL?'Pay cash or UPI when your order arrives.':IS_PU?'Pay at the counter when you collect.':'You pay once, at the end of your meal.'}</p>`}
+function placeBtn(){const n=cartCount(),tot=n?rs(sub()*(1+GST)+S.tip):'',dis=n?'':'disabled';
+ const cashTxt=IS_DL?'Pay cash or UPI on delivery':IS_PU?'Pay at the counter':'Pay at the end of your meal';
+ if(PAYON&&!IS_OFF)return `<button class="btn primary block" data-act="place" data-pay="online" ${dis}><span>Pay online</span><span class="spread num">${tot}</span>${ic.arrow}</button><button class="btn ghost block" data-act="place" data-pay="cash" ${dis} style="margin-top:8px"><span>${cashTxt}</span></button><p class="fine">Pay online and your order goes straight to the kitchen. Or order now and pay when you leave.</p>`;
+ return `<button class="btn primary block" data-act="place" ${dis}><span>${IS_OFF?'Checkout':'Send to kitchen'}</span><span class="spread num">${tot}</span>${ic.arrow}</button><p class="fine">${IS_DL?'Pay cash or UPI when your order arrives.':IS_PU?'Pay at the counter when you collect.':'You pay once, at the end of your meal.'}</p>`}
 function renderPanel(){
  const p=$('#panel');const st=p.querySelector('.cart-scroll')?.scrollTop||0;
  p.innerHTML=`<div class="cart-scroll">${cartInner('panel')}</div>${cartCount()?`<div class="cart-foot">${placeBtn()}</div>`:''}`;
@@ -1825,7 +1829,7 @@ function orderCard(o){const n=o.lines.reduce((t,l)=>t+l.qty,0);
   <p class="order-items">${o.lines.map(l=>`${l.qty} × ${esc(l.name)}`).join(', ')} <span class="num">(${n} item${n>1?'s':''})</span></p>${trackHTML(o)}</div>`}
 function openPlaced(o){
  openSheet(`<div class="sheet-scroll">${X}<div class="success"><div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
-  <h2>Sent to the kitchen</h2><p>${IS_DL&&o.customer?`Order <b>${o.no}</b> for delivery to ${esc(o.customer.name)}. Expect it in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} if we need help finding you.`:IS_PU&&o.customer?`Order <b>${o.no}</b> for ${esc(o.customer.name)}. It will be ready to collect in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} when it’s ready.`:`Order <b>${o.no}</b> for Table ${TABLE}. Expect it in about ${o.eta} minutes. We’ll bring everything to your table.`}</p></div>
+  <h2>${o.pay&&o.pay.mode==='online'?'Payment received':'Sent to the kitchen'}</h2><p>${IS_DL&&o.customer?`Order <b>${o.no}</b> for delivery to ${esc(o.customer.name)}. Expect it in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} if we need help finding you.`:IS_PU&&o.customer?`Order <b>${o.no}</b> for ${esc(o.customer.name)}. It will be ready to collect in about ${o.eta} minutes. We’ll call ${esc(o.customer.phone)} when it’s ready.`:`Order <b>${o.no}</b> for Table ${TABLE}. Expect it in about ${o.eta} minutes. We’ll bring everything to your table.`}</p>${o.pay&&o.pay.mode==='online'?`<p class="fine" style="margin-top:6px">Paid ${rs(o.total)} online. Nothing more to pay.</p>`:''}</div>
   <div class="pad">${orderCard(o)}</div></div>
   <div class="sheet-foot"><button class="btn ghost" data-act="orders">All orders</button><button class="btn primary" data-act="close">Add more dishes</button></div>`,'placed','Order sent');
  ctx.order=o.no;
@@ -1878,7 +1882,7 @@ function openCheckout(){
     <button type="button" class="btn ghost" id="geoBtn">${ic.pin||''}Use my current location</button>
     <p class="hint">Or open Google Maps, touch and hold your doorstep, tap Share, then Copy link, and paste it above.</p><em class="msg" hidden></em></div>`}
   </form></div></div>
-  <div class="sheet-foot"><button class="btn primary" type="submit" form="coForm"><span>Place order</span><span class="spread num">${rs(total)}</span>${ic.arrow}</button></div>`,'checkout',IS_PU?'Takeaway details':'Delivery details');
+  <div class="sheet-foot" style="display:grid;gap:8px">${PAYON?`<button class="btn primary" type="submit" form="coForm" data-pay="online"><span>Pay online</span><span class="spread num">${rs(total)}</span>${ic.arrow}</button><button class="btn ghost" type="submit" form="coForm" data-pay="cash"><span>${IS_DL?'Pay cash or UPI on delivery':'Pay at the counter'}</span></button>`:`<button class="btn primary" type="submit" form="coForm" data-pay="cash"><span>Place order</span><span class="spread num">${rs(total)}</span>${ic.arrow}</button>`}</div>`,'checkout',IS_PU?'Takeaway details':'Delivery details');
  const form=$('#coForm');if(!form)return;
  const get=()=>Object.fromEntries((IS_PU?['name','phone']:['name','phone','address','map']).map(k=>[k,form.elements[k].value]));
  const show=err=>form.querySelectorAll('[data-f]').forEach(el=>{const m=err[el.dataset.f],em=el.querySelector('.msg');el.classList.toggle('err',!!m);em.hidden=!m;em.textContent=m||''});
@@ -1886,7 +1890,7 @@ function openCheckout(){
   e.preventDefault();const {e:err,val}=validateCust(get());show(err);
   const first=Object.keys(err)[0];if(first){form.elements[first].focus();return}
   lsSet(CUST_KEY,JSON.stringify(get()));
-  placeOrder(document.querySelector('.sheet-foot [type=submit]'),val);
+  const sb=e.submitter||document.querySelector('.sheet-foot [type=submit]');placeOrder(sb,val,(sb.dataset&&sb.dataset.pay)||'cash');
  });
  const g=$('#geoBtn');
  if(!g);
@@ -1925,7 +1929,7 @@ function printBill(orders,table){
   +'<hr><div class="r"><span>Item total</span><span>'+rs(b.st)+'</span></div>'
   +'<div class="r"><span>CGST 2.5%</span><span>'+rs(cgst)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(sgst)+'</span></div>'
   +(b.tips?'<div class="r"><span>Staff tip</span><span>'+rs(b.tips)+'</span></div>':'')
-  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div><hr><p class="c">'+(ta?'Thank you for ordering with us!':'Thank you for dining with us!')+'</p></body></html>';
+  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div>'+(orders.every(o=>o.pay&&o.pay.mode==='online')?'<p class="c t">PAID ONLINE</p>':'')+'<hr><p class="c">'+(ta?'Thank you for ordering with us!':'Thank you for dining with us!')+'</p></body></html>';
  const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
  document.body.appendChild(f);
  const d=f.contentWindow.document;d.open();d.write(html);d.close();
@@ -1954,8 +1958,9 @@ function openWaiter(){
 }
 /* An order is held for 10 seconds so an accidental tap can be cancelled; after that it goes to the kitchen. */
 const HOLD_SECS=10;let HOLD=null;
-function placeOrder(btn,cust){
- if(!cartCount()||HOLD)return;
+function placeOrder(btn,cust,pay){
+ if(!cartCount()||HOLD||PAYING)return;
+ if(pay==='online'&&PAYON){payOnline(btn,cust);return}
  const end=Date.now()+HOLD_SECS*1000,el=document.createElement('div');
  el.className='hold';el.setAttribute('role','alertdialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','holdT');
  el.innerHTML=`<div class="hold-card"><div class="hold-ring"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="bg"/><circle cx="24" cy="24" r="21" class="fg" style="animation-duration:${HOLD_SECS}s"/></svg><b id="holdN">${HOLD_SECS}</b></div>
@@ -1974,14 +1979,49 @@ function cancelHold(){
  if(!HOLD)return;clearInterval(HOLD.t);HOLD.el.remove();HOLD=null;
  toast('Order cancelled. Your items are still in the cart.');
 }
+const orderParts=cust=>{
+ const lines=S.cart.map(l=>{const it=BY[l.id];return {id:l.id,name:it.name,qty:l.qty,unit:unit(it,l.sel),opt:summary(it,l.sel),note:l.note,v:it.v}});
+ const st=lines.reduce((t,l)=>t+l.qty*l.unit,0);
+ return {lines,total:Math.round(st*(1+GST)+S.tip),eta:Math.max(...lines.map(l=>BY[l.id].m))+5+(IS_DL?25:IS_PU?5:0),extra:cust?{type:IS_DL?'delivery':'takeaway',customer:cust}:{}};
+};
+function finishOrder(o){S.orders.push(o);S.cart=[];S.note='';S.tip=0;S.bill=false;save();refreshCtls();renderPanel();renderBar();openPlaced(o)}
+/* Online payment: the order is held on the server, Razorpay takes the money, and only then does it become a kitchen ticket. */
+const loadRzp=()=>window.Razorpay?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://checkout.razorpay.com/v1/checkout.js';sc.onload=ok;sc.onerror=()=>no(new Error('load'));document.head.appendChild(sc)});
+async function payOnline(btn,cust){
+ const span=btn.querySelector('span'),lbl=span.textContent,reset=()=>{PAYING=false;btn.disabled=false;span.textContent=lbl};
+ PAYING=true;btn.disabled=true;span.textContent='Opening payment…';
+ const {lines,eta,extra}=orderParts(cust),tip=S.tip,note=S.note;
+ try{
+  const r=await fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create',table:TABLE,lines,note,tip,eta,...extra})});
+  if(r.status===429){toast('Too many attempts. Please wait a moment and try again.');throw 0}
+  if(r.status===400){toast(cust?(IS_PU?'Please check your name and phone number.':'Please check your name, phone, address and map link.'):'Some dishes changed. Please review your order.');throw 0}
+  if(!r.ok)throw 0;
+  const j=await r.json();await loadRzp();
+  const rz=new window.Razorpay({key:j.keyId,amount:j.amount,currency:'INR',name:'Kaaram Kitchen',description:WHERE+' · '+lines.reduce((t,l)=>t+l.qty,0)+' item(s)',order_id:j.orderId,
+   prefill:cust?{name:cust.name,contact:cust.phone}:{},theme:{color:'#17482F'},
+   modal:{ondismiss:()=>{if(span.textContent!=='Confirming payment…')reset()}},
+   handler:async resp=>{span.textContent='Confirming payment…';
+    try{
+     const v=await fetch('/api/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify',...resp})});
+     if(!v.ok){const e=new Error('v');e.st=v.status;throw e}const k=await v.json();
+     const o={no:k.no,at:k.at,lines,tip,note,total:k.total,eta,pay:{mode:'online'},...extra};
+     FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta,lines,note,st:0,ts:[o.at],kitchen:true,sample:false,total:o.total,pay:{mode:'online'},...extra});
+     PAYING=false;btn.disabled=false;span.textContent=lbl;finishOrder(o);
+    }catch(e){
+     const ref=esc(resp.razorpay_payment_id||''),rejected=e&&e.st===400;
+     PAYING=false;btn.disabled=false;span.textContent=lbl;
+     if(!rejected){S.cart=[];S.note='';S.tip=0;save();refreshCtls();renderPanel();renderBar()}
+     openSheet(`<div class="sheet-scroll"><div class="pad" style="padding-top:26px">${X}<h2 class="item-title">${rejected?'We couldn’t confirm your payment':'Payment is being confirmed'}</h2><p class="item-desc">${rejected?'Nothing was sent to the kitchen. If money was deducted from your account, show this reference to our staff and they will sort it out':'We couldn’t show your order number here. If your payment went through, the order reaches the kitchen within a minute or two. If it doesn’t, show this reference to our staff'}: <b class="num">${ref}</b>.</p></div></div><div class="sheet-foot"><button class="btn primary" data-act="close">OK</button></div>`,'paid','Payment');
+    }}});
+  rz.on('payment.failed',()=>{toast('Payment failed. Nothing was sent to the kitchen. Try again or choose cash.');reset()});
+  rz.open();
+ }catch(e){if(e!==0)toast('Couldn’t start the payment. Please try again or choose cash.');reset()}
+}
 function sendOrder(btn,cust){
  const lbl=btn.querySelector('span').textContent;
  btn.disabled=true;btn.querySelector('span').textContent=cust?'Placing your order…':'Sending to kitchen…';
  (async()=>{
-  const lines=S.cart.map(l=>{const it=BY[l.id];return {id:l.id,name:it.name,qty:l.qty,unit:unit(it,l.sel),opt:summary(it,l.sel),note:l.note,v:it.v}});
-  const st=lines.reduce((t,l)=>t+l.qty*l.unit,0);
-  const total=Math.round(st*(1+GST)+S.tip),eta=Math.max(...lines.map(l=>BY[l.id].m))+5+(IS_DL?25:IS_PU?5:0);
-  const extra=cust?{type:IS_DL?'delivery':'takeaway',customer:cust}:{};
+  const {lines,total,eta,extra}=orderParts(cust);
   let o;
   if(NETFEED){
    try{
@@ -1990,15 +2030,15 @@ function sendOrder(btn,cust){
     if(r.status===400&&cust){toast(IS_PU?'Please check your name and phone number.':'Please check your name, phone, address and map link.');throw 0}
     if(!r.ok)throw 0;
     const j=await r.json();
-    o={no:j.no,at:j.at,lines,tip:S.tip,note:S.note,total,eta,...extra};
-    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta,lines,note:S.note,st:0,ts:[o.at],kitchen:true,sample:false,total,...extra});
+    o={no:j.no,at:j.at,lines,tip:S.tip,note:S.note,total,eta,pay:{mode:'cash'},...extra};
+    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta,lines,note:S.note,st:0,ts:[o.at],kitchen:true,sample:false,total,pay:{mode:'cash'},...extra});
    }catch(e){if(e!==0)toast('Couldn’t reach the kitchen. Please try again.');btn.disabled=false;btn.querySelector('span').textContent=lbl;return}
   }else{
    FEED=readFeed();FEED.seq=(FEED.seq||2416)+1;
    o={no:'KK-'+FEED.seq,at:Date.now(),lines,tip:S.tip,note:S.note,total,eta,...extra};
    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta:o.eta,lines,note:S.note,st:0,ts:[o.at],kitchen:false,sample:false,total:o.total,...extra});writeFeed();
   }
-  S.orders.push(o);S.cart=[];S.note='';S.tip=0;S.bill=false;save();refreshCtls();renderPanel();renderBar();openPlaced(o);
+  finishOrder(o);
  })();
 }
 
@@ -2037,7 +2077,7 @@ async function loadServerMenu(){
  if(!HTTP)return;
  try{
   const r=await fetch('/api/menu',{cache:'no-store'});if(!r.ok)return;
-  SERVER=true;NETFEED=r.headers.get('X-Kaaram-Storage')==='1';if(NETFEED)FEED={tickets:[],seq:0,seeded:true};const j=await r.json();
+  SERVER=true;NETFEED=r.headers.get('X-Kaaram-Storage')==='1';PAYON=NETFEED&&r.headers.get('X-Kaaram-Pay')==='1';if(NETFEED)FEED={tickets:[],seq:0,seeded:true};const j=await r.json();
   if(j&&(j.updated||0)>(DATA.updated||0)){DATA=cleanMenu(j);if(!A.on){M=DATA}reindex();renderAll()}
  }catch(e){}
 }
@@ -2053,7 +2093,7 @@ function dvCard(t){
   ${custHTML(c,true)}
   <div class="dact"><a class="btn ghost" href="tel:${esc(c.phone)}">Call</a>${/^https:\/\//.test(c.map)?`<a class="btn ghost" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">${ic.pin}Navigate</a>`:''}</div>
   <ul class="dlines">${items}</ul>${t.note?`<span class="knote">Note: ${esc(t.note)}</span>`:''}
-  <div class="dcollect">Collect <b class="num">${rs(t.total)}</b> on delivery · cash or UPI</div>
+  <div class="dcollect">${t.pay&&t.pay.mode==='online'?'<b>Paid online</b> · nothing to collect':`Collect <b class="num">${rs(t.total)}</b> on delivery · cash or UPI`}</div>
   <div class="tk-act">${t.st===3||t.delivered?`<button class="kundo" data-act="d-undo" data-no="${t.no}" aria-label="Undo for ${t.no}">${ic.undo}</button>`:''}${t.delivered?'':t.st===2?`<button class="kbump n2" data-act="d-pickup" data-no="${t.no}">Picked up · on my way${ic.arrow}</button>`:`<button class="kbump" data-act="d-done" data-no="${t.no}">Mark delivered${ic.check}</button>`}</div>
  </article>`;
 }
@@ -2382,7 +2422,7 @@ function feedChanged(){
 function ticketHTML(t,board){
  const ms=Date.now()-t.at,fresh=t.st===0&&ms<15000;
  return `<article class="tk s${t.st}${board?' boxed':''}${fresh?' fresh':''}" aria-label="Order ${t.no}, ${whereOf(t)}, ${KS(t)[t.st]}">
-  <div class="tk-top">${board?`<span class="tlabel">${tagOf(t)}</span>`:''}<span class="no">${t.no}</span><span class="kchip s${t.st}">${KS(t)[t.st]}</span>${t.sample?'<span class="kchip ex">Example</span>':''}
+  <div class="tk-top">${board?`<span class="tlabel">${tagOf(t)}</span>`:''}<span class="no">${t.no}</span><span class="kchip s${t.st}">${KS(t)[t.st]}</span>${t.pay&&t.pay.mode==='online'?'<span class="kchip paid">Paid</span>':!t.sample&&kind(t)!=='dinein'?'<span class="kchip cash">Cash</span>':''}${t.sample?'<span class="kchip ex">Example</span>':''}
    <span class="timer ${lateClass(ms,t.st)}" data-since="${t.at}" data-st="${t.st}" title="Time since ordered">${ic.clock}<span>${mmss(ms)}</span></span></div>
   ${kind(t)!=='dinein'&&t.customer?custHTML(t.customer):''}
   <ul>${t.lines.map(l=>`<li><span class="q">${l.qty}×</span><div><div class="n">${vm(l.v)}<span>${esc(l.name)}</span></div>${l.opt?`<div class="o">${esc(l.opt)}</div>`:''}${l.note?`<span class="knote">${esc(l.note)}</span>`:''}</div></li>`).join('')}</ul>
@@ -2467,7 +2507,7 @@ document.addEventListener('click',e=>{
   case 'confirm':ctx.confirm&&ctx.confirm();break;
   case 'cart':openCart();break;
   case 'close':closeSheet();break;
-  case 'place':if(IS_OFF)openCheckout();else placeOrder(el);break;
+  case 'place':if(IS_OFF)openCheckout();else placeOrder(el,null,el.dataset.pay||'cash');break;
   case 'orders':openOrders();break;
   case 'bill':openBill();break;
   case 'k-testprint':printBill([{no:'TEST',total:1071,tip:0,lines:[{name:'Test dish (print check)',opt:'',qty:2,unit:100},{name:'Another test dish',opt:'₹ symbol check',qty:1,unit:820}]}],'00');break;

@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
         let t; try { t = JSON.parse(flat[i + 1]); } catch (e) { continue; }
         if (!isDel(t) || t.st < 2) continue;
         if (t.delivered && now - t.delivered > KEEP_DELIVERED_MS) continue;
-        tickets.push({ no: t.no, at: t.at, eta: t.eta, lines: t.lines, note: t.note, total: t.total, customer: t.customer, st: t.st, ts: t.ts, delivered: t.delivered || 0, type: 'delivery', table: 'DL' });
+        tickets.push({ no: t.no, at: t.at, eta: t.eta, lines: t.lines, note: t.note, total: t.total, pay: t.pay || null, customer: t.customer, st: t.st, ts: t.ts, delivered: t.delivered || 0, type: 'delivery', table: 'DL' });
       }
       tickets.sort((a, b) => a.at - b.at);
       return res.end(JSON.stringify({ v, tickets }));

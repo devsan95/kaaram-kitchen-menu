@@ -52,3 +52,14 @@ Vercel serves everything over HTTPS, so Basic Auth credentials are protected in 
 - Optional rider login: set `KAARAM_RIDER_USER` and `KAARAM_RIDER_PASS` in Vercel. A rider can only see the delivery screen: packed delivery orders with the customer's name, phone, address, a Navigate link and the amount to collect. They cannot open the menu editor or the kitchen feed.
 - Flow: the kitchen marks an order **Packed** → it appears under *Ready for pickup* (with a chime) → rider taps **Picked up** → *On the road* → **Mark delivered**. Delivered orders stay visible for 30 minutes so a mis-tap can be undone.
 - The customer's tracker follows along and shows **Delivered** at the end. Staff also have a **Deliveries** tab in the staff bar.
+
+## Online payments (Razorpay)
+- Guests choose **Pay online** (UPI, cards, netbanking, wallets) or pay cash / at the counter / at the end of the meal. An online order is held on the server and only becomes a kitchen ticket once Razorpay confirms the payment. Cash orders go through the 10-second cancel window as before.
+- Kitchen tickets show **Paid** (online) or **Cash** (takeaway and delivery). The rider screen says "Paid online, nothing to collect" for prepaid deliveries. Printed bills say PAID ONLINE.
+- Set up:
+  1. Create a Razorpay account. Test keys (`rzp_test_...`) work straight away, with no KYC; use live keys after activation.
+  2. In Vercel add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`, then redeploy. The Pay online button only appears when both are set (and Redis storage is connected).
+  3. Razorpay Dashboard → Settings → Webhooks → add `https://<your-site>/api/pay?action=webhook`, choose the `payment.captured` event, set a secret, and add that secret in Vercel as `RAZORPAY_WEBHOOK_SECRET`. The webhook places the order if a guest pays and then closes the page before it confirms.
+  4. Keep Razorpay's payment capture on **automatic** (Settings → Payment capture).
+- Security: the amount is worked out on the server from your menu (dish ids and prices, plus the fixed option add-ons), never trusted from the phone. The payment signature is checked with HMAC-SHA256, and an order is placed once even if confirmation and webhook both arrive. If you add new option types in `OPTS` (public/index.html), add their prices to `OPT_PRICES` in `api/pay.js`.
+- Not built: refunds. Issue them from the Razorpay dashboard (the ticket shows the Razorpay payment id on the server only). Razorpay charges a per-transaction fee.

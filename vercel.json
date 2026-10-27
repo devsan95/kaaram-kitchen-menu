@@ -36,6 +36,9 @@
   "functions": {
     "api/admin.js": {
       "includeFiles": "public/index.html"
+    },
+    "api/pay.js": {
+      "includeFiles": "public/index.html"
     }
   },
   "headers": [
