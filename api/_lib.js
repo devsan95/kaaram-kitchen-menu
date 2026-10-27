@@ -45,10 +45,21 @@ function deny(res) {
 }
 
 // Storage: Upstash Redis over REST (Vercel Marketplace "Upstash Redis" / legacy Vercel KV env names both work).
+// Finds the Upstash/Vercel KV credentials. Vercel's Marketplace can add a custom prefix (e.g. STORAGE_KV_REST_API_URL),
+// so any variable ending in KV_REST_API_URL or UPSTASH_REDIS_REST_URL is accepted, with the matching token.
 function redisConf() {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  return url && token ? { url: url.replace(/\/$/, ''), token } : null;
+  const env = process.env;
+  const pairs = [['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'], ['KV_REST_API_URL', 'KV_REST_API_TOKEN']];
+  for (const [u, t] of pairs) if (env[u] && env[t]) return { url: env[u].replace(/\/$/, ''), token: env[t] };
+  for (const k of Object.keys(env)) {
+    for (const [u, t] of pairs) {
+      if (k.endsWith('_' + u) && env[k]) {
+        const tk = env[k.slice(0, -u.length) + t];
+        if (tk) return { url: env[k].replace(/\/$/, ''), token: tk };
+      }
+    }
+  }
+  return null;
 }
 async function redis(cmd) {
   const c = redisConf();
