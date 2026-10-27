@@ -1744,6 +1744,7 @@ function printBill(orders,table){
  if(!orders.length){toast('Nothing to print yet.');return}
  const b=billModel(orders),when=new Date().toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
  const nums=orders.map(o=>o.no).join(', ');
+ const grand=Math.round(b.total),cgst=Math.round(b.tax/2),sgst=grand-Math.round(b.st)-b.tips-cgst; /* rounded lines add up exactly to the total */
  const html='<!doctype html><html><head><meta charset="utf-8"><title>Bill · Table '+esc(table)+'</title><style>'
   +'@page{margin:8mm}*{box-sizing:border-box}body{font:13px/1.45 "Courier New",ui-monospace,monospace;color:#000;margin:0 auto;max-width:78mm;padding:4px}'
   +'h1{font:700 20px/1.1 Georgia,serif;text-align:center;margin:0}p{margin:0}.c{text-align:center}.m{color:#444;font-size:11.5px}'
@@ -1753,9 +1754,9 @@ function printBill(orders,table){
   +'<div class="r"><span>Table '+esc(table)+'</span><span>'+esc(when)+'</span></div><p class="m">Orders: '+esc(nums)+'</p><hr>'
   +b.rows.map(x=>'<div class="r"><span>'+x.q+' × '+esc(x.n)+'</span><span>'+rs(x.amt)+'</span></div>').join('')
   +'<hr><div class="r"><span>Item total</span><span>'+rs(b.st)+'</span></div>'
-  +'<div class="r"><span>CGST 2.5%</span><span>'+rs(b.tax/2)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(b.tax/2)+'</span></div>'
+  +'<div class="r"><span>CGST 2.5%</span><span>'+rs(cgst)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(sgst)+'</span></div>'
   +(b.tips?'<div class="r"><span>Staff tip</span><span>'+rs(b.tips)+'</span></div>':'')
-  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(b.total)+'</span></div><hr><p class="c">Thank you for dining with us!</p></body></html>';
+  +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div><hr><p class="c">Thank you for dining with us!</p></body></html>';
  const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
  document.body.appendChild(f);
  const d=f.contentWindow.document;d.open();d.write(html);d.close();
