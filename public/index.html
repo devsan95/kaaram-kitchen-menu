@@ -2135,6 +2135,7 @@ function renderKitchen(){
    <p>${NETFEED?'Oldest first. Orders from every table arrive here within a few seconds, and guests see each status change on their own phone.':'Oldest first. Orders sent from the menu in another tab of this browser arrive here live, and guests see each status change on their phone screen.'}</p></div>
   <div class="kds-ctrl"><div class="seg" role="group" aria-label="Layout"><button data-act="k-view" data-v="tables" aria-pressed="${KV==='tables'}">By table</button><button data-act="k-view" data-v="board" aria-pressed="${KV==='board'}">By status</button></div>
    <button class="chip" data-act="k-sound" aria-pressed="${soundOn}">${ic.sound}Sound</button>
+   <button class="chip" data-act="k-testprint">${ic.receipt}Test print</button>
    ${NETFEED?'':`<button class="chip" data-act="k-demo" aria-pressed="${demoOn}"><span class="switch"></span>Simulate other tables</button>`}
    ${samples&&!NETFEED?'<button class="chip" data-act="k-clear">Clear examples</button>':''}</div></div>
  <div class="kstats">
@@ -2202,6 +2203,7 @@ document.addEventListener('click',e=>{
   case 'place':placeOrder(el);break;
   case 'orders':openOrders();break;
   case 'bill':openBill();break;
+  case 'k-testprint':printBill([{no:'TEST',total:1071,tip:0,lines:[{name:'Test dish (print check)',opt:'',qty:2,unit:100},{name:'Another test dish',opt:'₹ symbol check',qty:1,unit:820}]}],'00');break;
   case 'print-bill':printBill(S.orders,TABLE);break;
   case 'k-print':printBill(FEED.tickets.filter(t=>t.table===el.dataset.table&&!t.sample),el.dataset.table);break;
   case 'reqbill':{const p=body.querySelector('input[name=pay]:checked')?.value;S.bill=true;save();closeSheet();toast(`Bill requested. A server is bringing it to Table ${TABLE}${p==='upi'?' with a UPI QR':''}.`);break}

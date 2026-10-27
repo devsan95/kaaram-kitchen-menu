@@ -19,3 +19,8 @@ Vercel serves everything over HTTPS, so Basic Auth credentials are protected in 
 
 ## Notes
 - `index.html` opened straight from disk (file://) falls back to a local-only login (`admin` / `kaaram@123`); that fallback is not used on the deployed site.
+
+## Printing bills
+- Guests: **Ask for bill → Print**. Staff: receipt icon on a table card in the Kitchen tab (By table view).
+- Kitchen tab → **Test print** prints a sample bill without placing an order. Use it the first time a printer is connected.
+- Receipt printer (80 mm): choose the 80 mm paper size, margins "None", turn off headers/footers. Normal printer: A4. Printing to "Save as PDF" also works.
