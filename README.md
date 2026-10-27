@@ -10,7 +10,9 @@ Guests land on a home page with three options (Dine in, Takeaway, Delivery); sta
 | `/table/7` | guests | Dine in at table 7. Put one QR code per table. Old `/#table7` links redirect here |
 | `/takeaway` | guests | Order ahead, collect from the counter. Asks for name and phone. Pay when you collect |
 | `/delivery` | guests | Home delivery. Asks for name, phone, address and Google Maps location. Pay cash or UPI on delivery |
-| `/admin` | staff | Menu editor (also `/admin/preview` for the guest view) |
+| `/admin` | staff | Menu editor |
+| `/settings` | staff | Restaurant name, address, GST, tables and colour theme |
+| `/preview` | staff | The guest view, with your unpublished changes |
 | `/kitchen` | staff | Kitchen display: all three order types |
 | `/rider` | staff or rider | Delivery run sheet |
 
@@ -63,3 +65,11 @@ Vercel serves everything over HTTPS, so Basic Auth credentials are protected in 
   4. Keep Razorpay's payment capture on **automatic** (Settings → Payment capture).
 - Security: the amount is worked out on the server from your menu (dish ids and prices, plus the fixed option add-ons), never trusted from the phone. The payment signature is checked with HMAC-SHA256, and an order is placed once even if confirmation and webhook both arrive. If you add new option types in `OPTS` (public/index.html), add their prices to `OPT_PRICES` in `api/pay.js`.
 - Not built: refunds. Issue them from the Razorpay dashboard (the ticket shows the Razorpay payment id on the server only). Razorpay charges a per-transaction fee.
+
+## Setting this up for a new restaurant
+One deployment per restaurant: fork or copy this repo, create a Vercel project from it, and give it its own Redis database, admin login and (optionally) Razorpay keys. Nothing in the code needs to change.
+1. Deploy, add `KAARAM_USER` / `KAARAM_PASS` (the admin login), connect Upstash Redis, and optionally `KAARAM_RIDER_USER` / `KAARAM_RIDER_PASS`, the Razorpay keys, and `ORDER_PREFIX` (2–4 letters, e.g. `SS`, so orders read `SS-2417`; default `OD`).
+2. Sign in at `/settings` and fill in the name, tagline, address, phone, closing time, GSTIN, FSSAI number, GST %, number of tables, waiting times, an optional logo link and a **theme** (Spice, Royal, Coastal, Noir, Citrus or Midnight; each also has a dark mode that follows the guest's phone). Edits show immediately in the page behind and go live with **Publish changes**.
+3. Replace the sample dishes in `/admin` (add, edit, delete, mark sold out), then publish.
+4. Print the QR codes: one for `https://<site>/` and one per table for `https://<site>/table/<number>`.
+- The built-in defaults (name, dishes) are only what shows before the first publish. They live in `public/index.html` (`menu-data`), so a new copy of the repo can also change them there.

@@ -535,6 +535,36 @@ body.managing .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .served li b{color:var(--ink)}
 .served .kundo{width:34px;height:34px;border-radius:9px}
 a.hbtn{text-decoration:none}
+/* Colour themes: the restaurant picks one in Admin → Settings. "spice" is the base palette above. */
+:root[data-skin="royal"]{--bg:#F7F1EA;--surface:#FFFFFF;--surface-2:#EFE5DA;--ink:#2A1618;--muted:#6B5658;--line:#E3D5C8;--leaf:#8C1F2E;--leaf-ink:#FFFFFF;--leaf-soft:#F6E1E3;--turmeric:#C9961A;--turmeric-soft:#F8EBC9;--turmeric-ink:#5A4200;--hero:#5E1220;--hero-ink:#FBF1EA;--hero-muted:#E3B9BE;--plate:#F5EEE6;--plate-rim:#E6D9CC}
+@media (prefers-color-scheme: dark){:root[data-skin="royal"]:not([data-theme="light"]){--bg:#17090B;--surface:#221215;--surface-2:#2C181C;--ink:#F3E6E4;--muted:#B79B9D;--line:#3A2327;--leaf:#E0707E;--leaf-ink:#260A0E;--leaf-soft:#3F1B21;--turmeric:#E6B94A;--turmeric-soft:#3A2C0E;--turmeric-ink:#F6DE97;--hero:#3B0C16;--hero-ink:#F6E8E4;--hero-muted:#D4A4AA;--plate:#33201F;--plate-rim:#402A2B;color-scheme:dark}}
+:root[data-skin="royal"][data-theme="dark"]{--bg:#17090B;--surface:#221215;--surface-2:#2C181C;--ink:#F3E6E4;--muted:#B79B9D;--line:#3A2327;--leaf:#E0707E;--leaf-ink:#260A0E;--leaf-soft:#3F1B21;--turmeric:#E6B94A;--turmeric-soft:#3A2C0E;--turmeric-ink:#F6DE97;--hero:#3B0C16;--hero-ink:#F6E8E4;--hero-muted:#D4A4AA;--plate:#33201F;--plate-rim:#402A2B;color-scheme:dark}
+:root[data-skin="coastal"]{--bg:#EEF4F7;--surface:#FFFFFF;--surface-2:#E2ECF1;--ink:#0F2230;--muted:#526877;--line:#D3E0E8;--leaf:#0E7C86;--leaf-ink:#FFFFFF;--leaf-soft:#D8EEF0;--turmeric:#F26B50;--turmeric-soft:#FDE3DC;--turmeric-ink:#6B1F10;--hero:#0F3550;--hero-ink:#EAF4F8;--hero-muted:#A9C6D6;--plate:#F0F5F8;--plate-rim:#DAE6ED}
+@media (prefers-color-scheme: dark){:root[data-skin="coastal"]:not([data-theme="light"]){--bg:#08141C;--surface:#0F1E29;--surface-2:#152B39;--ink:#E4EEF3;--muted:#92AAB8;--line:#1F3544;--leaf:#4FC3CC;--leaf-ink:#04181B;--leaf-soft:#11343A;--turmeric:#FF8F78;--turmeric-soft:#3C1D16;--turmeric-ink:#FFCFC4;--hero:#0A2535;--hero-ink:#E4EEF3;--hero-muted:#8EB0C3;--plate:#1A2C39;--plate-rim:#243A49;color-scheme:dark}}
+:root[data-skin="coastal"][data-theme="dark"]{--bg:#08141C;--surface:#0F1E29;--surface-2:#152B39;--ink:#E4EEF3;--muted:#92AAB8;--line:#1F3544;--leaf:#4FC3CC;--leaf-ink:#04181B;--leaf-soft:#11343A;--turmeric:#FF8F78;--turmeric-soft:#3C1D16;--turmeric-ink:#FFCFC4;--hero:#0A2535;--hero-ink:#E4EEF3;--hero-muted:#8EB0C3;--plate:#1A2C39;--plate-rim:#243A49;color-scheme:dark}
+:root[data-skin="noir"]{--bg:#F4F3F1;--surface:#FFFFFF;--surface-2:#EAE8E4;--ink:#1C1B19;--muted:#67635D;--line:#DDD9D3;--leaf:#2B2A27;--leaf-ink:#FFFFFF;--leaf-soft:#E7E5E1;--turmeric:#D98E04;--turmeric-soft:#FAEBC8;--turmeric-ink:#5A3A00;--hero:#1F1E1C;--hero-ink:#F6F3EE;--hero-muted:#B9B3A9;--plate:#F0EEEA;--plate-rim:#E0DCD5}
+@media (prefers-color-scheme: dark){:root[data-skin="noir"]:not([data-theme="light"]){--bg:#0C0C0B;--surface:#171614;--surface-2:#1F1E1B;--ink:#EFEBE4;--muted:#A39D92;--line:#2D2B27;--leaf:#E9E4DA;--leaf-ink:#14130F;--leaf-soft:#2A2824;--turmeric:#F2B533;--turmeric-soft:#3A2D0D;--turmeric-ink:#F8DC93;--hero:#121110;--hero-ink:#F6F3EE;--hero-muted:#A39D92;--plate:#25231F;--plate-rim:#302D28;color-scheme:dark}}
+:root[data-skin="noir"][data-theme="dark"]{--bg:#0C0C0B;--surface:#171614;--surface-2:#1F1E1B;--ink:#EFEBE4;--muted:#A39D92;--line:#2D2B27;--leaf:#E9E4DA;--leaf-ink:#14130F;--leaf-soft:#2A2824;--turmeric:#F2B533;--turmeric-soft:#3A2D0D;--turmeric-ink:#F8DC93;--hero:#121110;--hero-ink:#F6F3EE;--hero-muted:#A39D92;--plate:#25231F;--plate-rim:#302D28;color-scheme:dark}
+:root[data-skin="citrus"]{--bg:#FFF8F0;--surface:#FFFFFF;--surface-2:#FDEEDC;--ink:#2B1A0E;--muted:#7A6350;--line:#F0DEC8;--leaf:#D9480F;--leaf-ink:#FFFFFF;--leaf-soft:#FFE4D1;--turmeric:#F2A900;--turmeric-soft:#FFF0C2;--turmeric-ink:#5A3D00;--hero:#7C2D12;--hero-ink:#FFF3E8;--hero-muted:#F3C9A8;--plate:#FBF1E4;--plate-rim:#F0DFCB}
+@media (prefers-color-scheme: dark){:root[data-skin="citrus"]:not([data-theme="light"]){--bg:#170D06;--surface:#22150B;--surface-2:#2D1D10;--ink:#FBEBDD;--muted:#C4A58A;--line:#3D2A1A;--leaf:#FF8A4C;--leaf-ink:#2A1100;--leaf-soft:#432010;--turmeric:#FFC53D;--turmeric-soft:#3F2E08;--turmeric-ink:#FFE39A;--hero:#4A1B09;--hero-ink:#FFF1E4;--hero-muted:#E3B592;--plate:#33231A;--plate-rim:#402D1F;color-scheme:dark}}
+:root[data-skin="citrus"][data-theme="dark"]{--bg:#170D06;--surface:#22150B;--surface-2:#2D1D10;--ink:#FBEBDD;--muted:#C4A58A;--line:#3D2A1A;--leaf:#FF8A4C;--leaf-ink:#2A1100;--leaf-soft:#432010;--turmeric:#FFC53D;--turmeric-soft:#3F2E08;--turmeric-ink:#FFE39A;--hero:#4A1B09;--hero-ink:#FFF1E4;--hero-muted:#E3B592;--plate:#33231A;--plate-rim:#402D1F;color-scheme:dark}
+:root[data-skin="midnight"]{--bg:#F4F3FB;--surface:#FFFFFF;--surface-2:#E9E7F6;--ink:#1A1838;--muted:#5F5C85;--line:#DCD9F0;--leaf:#4F46E5;--leaf-ink:#FFFFFF;--leaf-soft:#E3E1FC;--turmeric:#F59E0B;--turmeric-soft:#FDEFC9;--turmeric-ink:#5C3A00;--hero:#2E2A72;--hero-ink:#F1F0FF;--hero-muted:#B8B5E8;--plate:#F1F0FA;--plate-rim:#E0DDF2}
+@media (prefers-color-scheme: dark){:root[data-skin="midnight"]:not([data-theme="light"]){--bg:#0C0B1A;--surface:#15142B;--surface-2:#1D1B3A;--ink:#E9E8FA;--muted:#9C99C6;--line:#2A2850;--leaf:#8B85FF;--leaf-ink:#0D0B26;--leaf-soft:#25225A;--turmeric:#FBBF24;--turmeric-soft:#3A2D0B;--turmeric-ink:#FDE59A;--hero:#1B1850;--hero-ink:#EDEBFF;--hero-muted:#A5A2DA;--plate:#232146;--plate-rim:#2E2B58;color-scheme:dark}}
+:root[data-skin="midnight"][data-theme="dark"]{--bg:#0C0B1A;--surface:#15142B;--surface-2:#1D1B3A;--ink:#E9E8FA;--muted:#9C99C6;--line:#2A2850;--leaf:#8B85FF;--leaf-ink:#0D0B26;--leaf-soft:#25225A;--turmeric:#FBBF24;--turmeric-soft:#3A2D0B;--turmeric-ink:#FDE59A;--hero:#1B1850;--hero-ink:#EDEBFF;--hero-muted:#A5A2DA;--plate:#232146;--plate-rim:#2E2B58;color-scheme:dark}
+/* Settings screen */
+.set-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));align-items:start}
+.set-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;display:grid;gap:12px}
+.set-card h3{font-size:18px}.set-card .f{display:grid;gap:4px;font-weight:600;font-size:13.5px}
+.set-card input{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:15px;width:100%}
+.set-card .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.set-card .hint{font-weight:400;color:var(--muted);font-size:12.5px}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.skin{display:grid;gap:8px;padding:10px;border-radius:16px;border:2px solid var(--line);background:var(--surface);text-align:left;cursor:pointer}
+.skin[aria-pressed=true]{border-color:var(--leaf);box-shadow:0 0 0 3px var(--leaf-soft)}
+.skin .sw{display:flex;height:34px;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}.skin .sw i{flex:1}
+.skin b{font-size:14px}.skin small{color:var(--muted);font-size:12px}
+.logo b{font:800 18px var(--f-display);color:#1b1500}.logo img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+/*end skins*/
 /* Home: choose how to order */
 .home{min-height:100vh;background:var(--hero);color:var(--hero-ink);padding:max(28px,env(safe-area-inset-top,0px)) 0 40px}
 .home .wrap{max-width:760px}
@@ -565,6 +595,23 @@ a.mode:active{transform:scale(.99)}
  "v": 1,
  "pubId": "initial",
  "updated": 0,
+ "site": {
+  "name": "Kaaram Kitchen",
+  "tagline": "Andhra & Hyderabadi · Banjara Hills",
+  "address": "Road No. 12, Banjara Hills, Hyderabad",
+  "phone": "",
+  "closes": "11:30 pm",
+  "chef": "Chef Ramana",
+  "gstin": "",
+  "fssai": "",
+  "gst": 5,
+  "tables": 20,
+  "waitDine": "15–25",
+  "waitPickup": "20–30",
+  "waitDelivery": "35–50",
+  "logo": "",
+  "skin": "spice"
+ },
  "cats": [
   {
    "id": "starters",
@@ -1386,19 +1433,59 @@ const OPT_LABEL={'':'None (add straight to order)',starter:'Spice level',dosa:'D
 const TAGN={best:'Bestseller',chef:"Chef's special",new:'New'};
 const ART_TYPES=[['bowl','Curry bowl'],['rice','Rice or biryani'],['pieces','Fried pieces'],['dosa','Dosa'],['idli','Idli'],['vada','Vada'],['flat','Flatbread'],['sweet','Sweets'],['glass','Drink'],['thali','Banana-leaf meal']];
 const ART_T=ART_TYPES.map(a=>a[0]);
+/* ---------- Restaurant details and themes (edited in Admin → Settings, stored with the published menu) ---------- */
+const SKINS=[
+ {id:'spice',name:'Spice',note:'Leaf green and turmeric',sw:['#17482F','#E3A414','#F3F5EF']},
+ {id:'royal',name:'Royal',note:'Maroon and gold',sw:['#5E1220','#C9961A','#F7F1EA']},
+ {id:'coastal',name:'Coastal',note:'Navy, teal and coral',sw:['#0F3550','#F26B50','#EEF4F7']},
+ {id:'noir',name:'Noir',note:'Charcoal and amber',sw:['#1F1E1C','#D98E04','#F4F3F1']},
+ {id:'citrus',name:'Citrus',note:'Warm orange and saffron',sw:['#7C2D12','#F2A900','#FFF8F0']},
+ {id:'midnight',name:'Midnight',note:'Indigo and gold',sw:['#2E2A72','#F59E0B','#F4F3FB']}];
+const SKIN_IDS=SKINS.map(x=>x.id);
+const GENERIC_SITE={name:'Your Restaurant',tagline:'',address:'',phone:'',closes:'11:00 pm',chef:'',gstin:'',fssai:'',gst:5,tables:20,waitDine:'15–25',waitPickup:'20–30',waitDelivery:'35–50',logo:'',skin:'spice'};
+function cleanSite(raw,base){
+ raw=raw&&typeof raw==='object'?raw:{};const b=base||GENERIC_SITE;
+ const t=(k,n)=>typeof raw[k]==='string'?raw[k].replace(/[\u0000-\u001f\u007f]+/g,' ').trim().slice(0,n):String(b[k]==null?'':b[k]);
+ const nn=(k,lo,hi,d)=>{const v=Number(raw[k]);return raw[k]!==undefined&&raw[k]!==''&&raw[k]!==null&&Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):(b[k]==null?d:b[k])};
+ const logo=t('logo',300);
+ return {name:t('name',60)||b.name||GENERIC_SITE.name,tagline:t('tagline',80),address:t('address',160),phone:t('phone',20),closes:t('closes',20),chef:t('chef',40),gstin:t('gstin',15),fssai:t('fssai',14),
+  gst:Math.round(nn('gst',0,28,5)*100)/100,tables:Math.round(nn('tables',1,99,20)),waitDine:t('waitDine',12),waitPickup:t('waitPickup',12),waitDelivery:t('waitDelivery',12),
+  logo:/^https:\/\/\S+$/.test(logo)?logo:'',skin:SKIN_IDS.includes(raw.skin)?raw.skin:(SKIN_IDS.includes(b.skin)?b.skin:'spice')};
+}
+let EMBED={};try{EMBED=JSON.parse(document.getElementById('menu-data').textContent)||{}}catch(e){}
+const DEF_SITE=cleanSite(EMBED.site,GENERIC_SITE);
+let SITE=DEF_SITE,GST=DEF_SITE.gst/100;
+const initials=n=>String(n).split(/\s+/).filter(Boolean).slice(0,2).map(w=>Array.from(w)[0].toUpperCase()).join('')||'•';
+const logoHTML=()=>SITE.logo?`<img src="${esc(SITE.logo)}" alt="" loading="lazy">`:`<b>${esc(initials(SITE.name))}</b>`;
+const pct=n=>String(Math.round(n*100)/100);
+const footText=()=>[SITE.name,SITE.address,SITE.phone,SITE.fssai&&'FSSAI '+SITE.fssai,SITE.gstin&&'GSTIN '+SITE.gstin].filter(Boolean).join(' · ');
+const factsHTML=()=>`<span><b>Kitchen open</b> till ${esc(SITE.closes)}</span><span><b>${IS_DL?'Delivery':IS_PU?'Ready in':'Avg. wait'}</b> ${esc(IS_DL?SITE.waitDelivery:IS_PU?SITE.waitPickup:SITE.waitDine)} min</span><span><b>Prices</b> in ₹${SITE.gst?`, plus ${pct(SITE.gst)}% GST`:', taxes included'}</span>`;
+/* Paints the current site details into the page. Called at start, when the server menu arrives and on every settings edit. */
+function applySite(next){
+ if(next)SITE=next;GST=SITE.gst/100;
+ document.documentElement.dataset.skin=SITE.skin;
+ document.title=SITE.name+(MODE==='home'?' · Order':' Menu');
+ document.querySelectorAll('.siteName').forEach(e=>e.textContent=SITE.name);
+ document.querySelectorAll('.siteTag').forEach(e=>{e.textContent=SITE.tagline;e.hidden=!SITE.tagline});
+ document.querySelectorAll('.logo').forEach(e=>{e.innerHTML=logoHTML()});
+ document.querySelectorAll('.siteFoot').forEach(e=>e.textContent=footText());
+ document.querySelectorAll('.siteHours').forEach(e=>e.textContent='Kitchen open till '+SITE.closes);
+ document.querySelectorAll('.siteAddr').forEach(e=>e.textContent=SITE.address);
+ const f=document.getElementById('facts');if(f)f.innerHTML=factsHTML();
+}
 /* ---------- Where am I? Every view has its own URL ----------
    /                 home: choose Dine in, Takeaway or Delivery
    /table/7          dine in at table 7 (the table QR codes)
    /takeaway         order ahead and collect from the counter
    /delivery         home delivery
-   /admin /admin/preview /kitchen /rider   staff screens
+   /admin /preview /settings /kitchen /rider   staff screens
    Opened from a file (no server) the same views use #hashes instead. */
 const FILE=location.protocol==='file:';
 const PATH=FILE?'/':(location.pathname.replace(/\/+$/,'')||'/').toLowerCase();
 const HASH=location.hash||'',hm=HASH.replace(/^#/,'').toLowerCase();
-const STAFF_PATH={'/admin':'edit','/admin/preview':'preview','/kitchen':'kitchen','/rider':'delivery'};
+const STAFF_PATH={'/admin':'edit','/preview':'preview','/settings':'settings','/kitchen':'kitchen','/rider':'delivery'};
 const STAFF_HASH={admin:'edit',kitchen:'kitchen',rider:'delivery'};
-const VIEW_PATH={edit:'/admin',preview:'/admin/preview',kitchen:'/kitchen',delivery:'/rider'};
+const VIEW_PATH={edit:'/admin',preview:'/preview',settings:'/settings',kitchen:'/kitchen',delivery:'/rider'};
 const tm=/^\/table\/(\d{1,3})$/.exec(PATH)||/^#?t(?:able)?-?(\d{1,3})$/i.exec(HASH);
 const MODE=tm?'dine':(PATH==='/takeaway'||/^take-?away$/.test(hm))?'takeaway':(PATH==='/delivery'||hm==='delivery')?'delivery':(STAFF_PATH[PATH]||STAFF_HASH[hm])?'dine':'home';
 const IS_PU=MODE==='takeaway',IS_DL=MODE==='delivery',IS_OFF=IS_PU||IS_DL;
@@ -1409,39 +1496,40 @@ if(!FILE&&PATH==='/'){ /* old links: tidy #table12, #takeaway and #delivery into
 }
 if(MODE==='home'){renderHome();return}
 function renderHome(){
- document.title='Kaaram Kitchen · Order';
- const hr=new Date().getHours(),svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+  const hr=new Date().getHours(),svg=d=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
  const arrow=svg('<path d="M5 12h14M13 6l6 6-6 6"/>');
  document.getElementById('app').innerHTML=`<main class="home"><div class="wrap">
-  <div class="brand"><div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 25c9 1 16-6 15-15l-3-1c0 7-5 13-12 13z" fill="#C23C25"/><path d="M21 9c0-3 1-5 4-6" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M19 8.5c1.5-1.6 4-1.6 5.5.2" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg></div>
-   <div><h1>Kaaram Kitchen</h1><p>Andhra &amp; Hyderabadi · Banjara Hills</p></div></div>
+  <div class="brand"><div class="logo" aria-hidden="true">${logoHTML()}</div>
+   <div><h1 class="siteName">${esc(SITE.name)}</h1><p class="siteTag" ${SITE.tagline?'':'hidden'}>${esc(SITE.tagline)}</p></div></div>
   <h2 class="home-h">${hr<11?'Good morning.':hr<16?'Good afternoon.':'Good evening.'} <em>How would you like to order?</em></h2>
   <p class="home-sub">Pick one and we’ll show you the menu.</p>
   <div class="modes">
    <div class="mode"><span class="mi" aria-hidden="true">${svg('<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-3 4.5-3 7h3v11"/>')}</span>
-    <div><h3>Dine in</h3><p>You’re at the restaurant. Order from your table and pay when you leave.</p><span class="mt">Average wait 15–25 min</span></div><span></span>
+    <div><h3>Dine in</h3><p>You’re at the restaurant. Order from your table and pay when you leave.</p><span class="mt">Average wait ${esc(SITE.waitDine)} min</span></div><span></span>
     <form id="dineForm" novalidate><label>Table number<input id="dineNo" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="e.g. 7"></label><button type="submit">Open menu</button><span class="err" id="dineErr" role="alert" hidden></span></form></div>
    <a class="mode" href="${route('/takeaway')}"><span class="mi" aria-hidden="true">${svg('<path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>')}</span>
-    <div><h3>Takeaway</h3><p>Order ahead and collect it from our counter. Pay when you collect.</p><span class="mt">Ready in 20–30 min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
+    <div><h3>Takeaway</h3><p>Order ahead and collect it from our counter. Pay when you collect.</p><span class="mt">Ready in ${esc(SITE.waitPickup)} min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
    <a class="mode" href="${route('/delivery')}"><span class="mi" aria-hidden="true">${svg('<circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-9H8M14 8h3l1 5"/>')}</span>
-    <div><h3>Delivery</h3><p>We bring it to your door. Pay cash or UPI when it arrives.</p><span class="mt">35–50 min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
+    <div><h3>Delivery</h3><p>We bring it to your door. Pay cash or UPI when it arrives.</p><span class="mt">${esc(SITE.waitDelivery)} min</span></div><span class="go" aria-hidden="true">${arrow}</span></a>
   </div>
-  <div class="home-foot"><span>Kitchen open till 11:30 pm</span><span>Road No. 12, Banjara Hills, Hyderabad</span><a href="${FILE?'#admin':'/admin'}">Staff</a></div>
+  <div class="home-foot"><span class="siteHours">Kitchen open till ${esc(SITE.closes)}</span><span class="siteAddr">${esc(SITE.address)}</span><a href="${FILE?'#admin':'/admin'}">Staff</a></div>
  </div></main>`;
  const f=document.getElementById('dineForm'),inp=document.getElementById('dineNo'),er=document.getElementById('dineErr');
+ applySite();
+ /* the published settings may differ from the built-in ones: fetch them and repaint */
+ if(!FILE)fetch('/api/menu').then(r=>r.ok?r.json():null).then(j=>{if(j&&j.site){applySite(cleanSite(j.site,DEF_SITE));document.querySelectorAll('.mode .mt')[0].textContent='Average wait '+SITE.waitDine+' min';document.querySelectorAll('.mode .mt')[1].textContent='Ready in '+SITE.waitPickup+' min';document.querySelectorAll('.mode .mt')[2].textContent=SITE.waitDelivery+' min'}}).catch(e=>console.error('SITEERR',e&&e.message));
  f.addEventListener('submit',e=>{e.preventDefault();const n=parseInt(inp.value,10);
-  if(!(n>=1&&n<=20)){er.hidden=false;er.textContent='Enter the number on your table, from 1 to 20.';inp.focus();return}
+  if(!(n>=1&&n<=SITE.tables)){er.hidden=false;er.textContent='Enter the number on your table, from 1 to '+SITE.tables+'.';inp.focus();return}
   location.href=route('/table/'+n)});
 }
 const STEPS_DINE=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Ready','Coming to your table'],['Served','Enjoy your meal']];
 const STEPS_PU=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Ready to collect','Waiting for you at the counter'],['Collected','Enjoy your meal']];
 const STEPS_DL=[['Received','The kitchen has your order'],['Cooking','On the stove right now'],['Packed','Ready and being handed to the rider'],['On its way','Out for delivery. Keep your phone handy']];
 const STEPS=IS_DL?STEPS_DL:IS_PU?STEPS_PU:STEPS_DINE;
-const GST=0.05;
 
 /* ---------- Menu data (embedded in the page, replaced on each publish) ---------- */
 function cleanMenu(raw){
- raw=raw||{};const out={v:1,pubId:String(raw.pubId||'initial'),updated:+raw.updated||0,cats:[],items:[]};const ids=new Set();
+ raw=raw||{};const out={v:1,pubId:String(raw.pubId||'initial'),updated:+raw.updated||0,site:cleanSite(raw.site,DEF_SITE),cats:[],items:[]};const ids=new Set();
  (Array.isArray(raw.cats)?raw.cats:[]).forEach(c=>{let id=String(c.id||'');if(!/^[a-z0-9-]{1,40}$/.test(id)||ids.has(id))id=slugId(c.name||'cat',ids);ids.add(id);
   out.cats.push({id,name:String(c.name||'Untitled').slice(0,40),blurb:String(c.blurb||'').slice(0,120)})});
  const catIds=new Set(out.cats.map(c=>c.id));
@@ -1599,8 +1687,8 @@ document.getElementById('app').innerHTML=`
 <div class="abar" id="abar" hidden></div>
 <header class="hero"><div class="wrap">
  <div class="hero-top">
-  <div class="brand"><div class="logo" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M9 25c9 1 16-6 15-15l-3-1c0 7-5 13-12 13z" fill="#C23C25"/><path d="M21 9c0-3 1-5 4-6" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M19 8.5c1.5-1.6 4-1.6 5.5.2" stroke="#17482F" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg></div>
-   <div><h1>Kaaram Kitchen</h1><p>Andhra &amp; Hyderabadi · Banjara Hills</p></div></div>
+  <div class="brand"><div class="logo" aria-hidden="true">${logoHTML()}</div>
+   <div><h1 class="siteName">${esc(SITE.name)}</h1><p class="siteTag" ${SITE.tagline?'':'hidden'}>${esc(SITE.tagline)}</p></div></div>
   <div class="hero-actions">
    <button class="hbtn" data-act="orders" id="ordersBtn" hidden><i class="dot"></i><span id="ordersBtnTxt">Your orders</span></button>
    <a class="hbtn" href="${route('/')}">${ic.cutlery}Change order type</a>${IS_OFF?'':`<button class="hbtn" data-act="waiter">${ic.bell}Call server</button>`}
@@ -1608,12 +1696,12 @@ document.getElementById('app').innerHTML=`
  </div>
  <div class="greet"><h2 id="greet">Good evening. <em>What are we eating?</em></h2>
   <div class="table-card"><div class="table-no num" id="tableNo">07</div>${IS_DL?'<div><small>Delivery</small><span>Delivered to your door,<br>pay on delivery</span></div>':IS_PU?'<div><small>Takeaway</small><span>Collect from the counter,<br>pay when you collect</span></div>':'<div><small>Your table</small><span>Dine-in · order in rounds,<br>pay when you leave</span></div>'}</div></div>
- <div class="facts"><span><b>Kitchen open</b> till 11:30 pm</span><span><b>${IS_DL?'Delivery':IS_PU?'Ready in':'Avg. wait'}</b> ${IS_DL?'35–50':IS_PU?'20–30':'15–25'} min</span><span><b>Prices</b> in ₹, plus 5% GST</span></div>
+ <div class="facts" id="facts"></div>
 </div></header>
 <div class="wrap tools">
  <label class="search" for="q">
   <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-  <input id="q" type="search" placeholder="Search biryani, dosa, gongura…" autocomplete="off" aria-label="Search the menu">
+  <input id="q" type="search" placeholder="Search the menu…" autocomplete="off" aria-label="Search the menu">
   <button class="clr" id="qclr" type="button" aria-label="Clear search" hidden>${ic.x.replace('class="ico"','class="ico" style="position:static"')}</button>
  </label>
  <div class="chips" role="group" aria-label="Filters">
@@ -1628,8 +1716,8 @@ document.getElementById('app').innerHTML=`
 <nav class="rail" id="rail" aria-label="Menu sections"><div class="wrap" id="cats"></div></nav>
 <div class="wrap layout"><main class="menu" id="menu"></main><aside class="aside" aria-label="Your order"><div class="panel" id="panel"></div></aside></div>
 <div class="wrap"><footer class="foot">
- <span>Kaaram Kitchen · Road No. 12, Banjara Hills, Hyderabad · FSSAI-marked veg and non-veg dishes</span>
- <span>Demo: orders reach the kitchen display only in this browser. Table links look like <b>/table/12</b>. <button data-act="reset">Reset demo</button> · <button data-act="signin" id="staffBtn">Staff sign-in</button></span>
+ <span class="siteFoot"></span>
+ <span><span id="demoBits">Demo: orders reach the kitchen display only in this browser. Table links look like <b>/table/12</b>. <button data-act="reset">Reset demo</button> · </span><button data-act="signin" id="staffBtn">Staff sign-in</button></span>
 </footer></div>
 <div class="bar" id="bar"></div>
 <div class="scrim" id="scrim" hidden></div>
@@ -1647,7 +1735,7 @@ const qtyOf=id=>S.cart.filter(l=>l.id===id).reduce((t,l)=>t+l.qty,0);
 const cartCount=()=>S.cart.reduce((t,l)=>t+l.qty,0);
 const sub=()=>S.cart.reduce((t,l)=>t+l.qty*unit(BY[l.id],l.sel),0);
 /* Kitchen feed: every table's tickets, shared through this browser's storage */
-const FEED_KEY='kaaram-kds-v1',HB_KEY='kaaram-kds-hb',TABLES=20;
+const FEED_KEY='kaaram-kds-v1',HB_KEY='kaaram-kds-hb';
 let NETFEED=false,PAYON=false,PAYING=false;/* true when the server stores orders, so every device shares one kitchen feed */
 function readFeed(){if(NETFEED)return FEED;try{const f=JSON.parse(lsGet(FEED_KEY)||'null');if(f&&Array.isArray(f.tickets))return f}catch(e){}return {tickets:[],seq:2416,seeded:false}}
 let FEED=readFeed(),lastFeedStr=lsGet(FEED_KEY)||'',HB=+lsGet(HB_KEY)||0;
@@ -1694,7 +1782,7 @@ function renderMenu(){
  if(!filtering){
   const live=M.items.filter(i=>!i.off);
   const picks=live.filter(i=>i.tags.includes('chef')).concat(live.filter(i=>i.tags.includes('best')&&!i.tags.includes('chef'))).slice(0,8);
-  if(picks.length)html+=`<section class="picks" aria-label="Chef's picks"><div class="sec-head"><div><span class="eyebrow">Tonight</span><h2>Chef's picks</h2><p>What Chef Ramana would order at this table.</p></div></div>
+  if(picks.length)html+=`<section class="picks" aria-label="Chef's picks"><div class="sec-head"><div><span class="eyebrow">Tonight</span><h2>Chef's picks</h2><p>${SITE.chef?esc(SITE.chef)+'’s recommendations for tonight.':'Popular with our guests tonight.'}</p></div></div>
    <div class="scroller">${picks.map(it=>`<div class="pick" data-act="open" data-id="${it.id}" tabindex="0" role="button" aria-label="${esc(it.name)}">
     <div class="art">${artOf(it)}</div>
     <div class="card-top">${vm(it.v)}${spice(it.s)}</div>
@@ -1744,7 +1832,7 @@ function cartInner(where){
  </li>`}).join('')}</ul>
  <div class="block-pad"><label class="field-label" for="note-${where}">Note for the kitchen</label><textarea id="note-${where}" data-bind="note" placeholder="Allergies, less oil, no onion and garlic…">${esc(S.note)}</textarea></div>
  <div class="block-pad" style="padding-top:0"><span class="field-label">Tip for the staff</span><div class="tips">${[0,20,50,100].map(t=>`<button class="chip" data-act="tip" data-tip="${t}" aria-pressed="${S.tip===t}">${t?rs(t):'No tip'}</button>`).join('')}</div></div>
- <div class="bill"><div><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST 2.5%</span><span>${rs(tax/2)}</span></div><div class="muted"><span>SGST 2.5%</span><span>${rs(tax/2)}</span></div>${S.tip?`<div class="muted"><span>Staff tip</span><span>${rs(S.tip)}</span></div>`:''}<div class="total"><span>To pay</span><span>${rs(total)}</span></div></div>`;
+ <div class="bill"><div><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST ${pct(SITE.gst/2)}%</span><span>${rs(tax/2)}</span></div><div class="muted"><span>SGST ${pct(SITE.gst/2)}%</span><span>${rs(tax/2)}</span></div>${S.tip?`<div class="muted"><span>Staff tip</span><span>${rs(S.tip)}</span></div>`:''}<div class="total"><span>To pay</span><span>${rs(total)}</span></div></div>`;
  return h;
 }
 function placeBtn(){const n=cartCount(),tot=n?rs(sub()*(1+GST)+S.tip):'',dis=n?'':'disabled';
@@ -1922,12 +2010,12 @@ function printBill(orders,table){
   +'h1{font:700 20px/1.1 Georgia,serif;text-align:center;margin:0}p{margin:0}.c{text-align:center}.m{color:#444;font-size:11.5px}'
   +'hr{border:0;border-top:1px dashed #000;margin:8px 0}.r{display:flex;justify-content:space-between;gap:10px}.r span:first-child{flex:1}.r span:last-child{white-space:nowrap}'
   +'.t{font-weight:700;font-size:15px}</style></head><body>'
-  +'<h1>Kaaram Kitchen</h1><p class="c m">Andhra &amp; Hyderabadi · Banjara Hills</p><hr>'
+  +'<h1>'+esc(SITE.name)+'</h1>'+(SITE.tagline?'<p class="c m">'+esc(SITE.tagline)+'</p>':'')+(SITE.address?'<p class="c m">'+esc(SITE.address)+'</p>':'')+(SITE.phone?'<p class="c m">Tel '+esc(SITE.phone)+'</p>':'')+(SITE.gstin?'<p class="c m">GSTIN '+esc(SITE.gstin)+'</p>':'')+(SITE.fssai?'<p class="c m">FSSAI '+esc(SITE.fssai)+'</p>':'')+'<hr>'
   +'<div class="r"><span>'+(ta?lbl:'Table '+esc(table))+'</span><span>'+esc(when)+'</span></div><p class="m">Orders: '+esc(nums)+'</p>'
   +(cust?'<hr><p><b>'+esc(cust.name)+'</b> · '+esc(cust.phone)+'</p>'+(cust.address?'<p class="m">'+esc(cust.address)+'</p>':''):'')+'<hr>'
   +b.rows.map(x=>'<div class="r"><span>'+x.q+' × '+esc(x.n)+'</span><span>'+rs(x.amt)+'</span></div>').join('')
   +'<hr><div class="r"><span>Item total</span><span>'+rs(b.st)+'</span></div>'
-  +'<div class="r"><span>CGST 2.5%</span><span>'+rs(cgst)+'</span></div><div class="r"><span>SGST 2.5%</span><span>'+rs(sgst)+'</span></div>'
+  +'<div class="r"><span>CGST '+pct(SITE.gst/2)+'%</span><span>'+rs(cgst)+'</span></div><div class="r"><span>SGST '+pct(SITE.gst/2)+'%</span><span>'+rs(sgst)+'</span></div>'
   +(b.tips?'<div class="r"><span>Staff tip</span><span>'+rs(b.tips)+'</span></div>':'')
   +'<hr><div class="r t"><span>TOTAL</span><span>'+rs(grand)+'</span></div>'+(orders.every(o=>o.pay&&o.pay.mode==='online')?'<p class="c t">PAID ONLINE</p>':'')+'<hr><p class="c">'+(ta?'Thank you for ordering with us!':'Thank you for dining with us!')+'</p></body></html>';
  const f=document.createElement('iframe');f.setAttribute('aria-hidden','true');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
@@ -1942,7 +2030,7 @@ function openBill(){
  openSheet(`<div class="sheet-scroll"><div class="pad" style="padding-top:26px">${X}
   <span class="eyebrow">Table ${TABLE}</span><h2 class="item-title">Your bill</h2>
   <div class="bill" style="margin:12px 0 0">${Object.entries(all).map(([k,x])=>`<div><span>${x.q} × ${esc(k)}</span><span>${rs(x.amt)}</span></div>`).join('')}
-   <div class="muted" style="border-top:1px dashed var(--line);padding-top:8px"><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST 2.5% + SGST 2.5%</span><span>${rs(tax)}</span></div>${tips?`<div class="muted"><span>Staff tips</span><span>${rs(tips)}</span></div>`:''}<div class="total"><span>Total</span><span>${rs(total)}</span></div></div>
+   <div class="muted" style="border-top:1px dashed var(--line);padding-top:8px"><span>Item total</span><span>${rs(st)}</span></div><div class="muted"><span>CGST ${pct(SITE.gst/2)}% + SGST ${pct(SITE.gst/2)}%</span><span>${rs(tax)}</span></div>${tips?`<div class="muted"><span>Staff tips</span><span>${rs(tips)}</span></div>`:''}<div class="total"><span>Total</span><span>${rs(total)}</span></div></div>
   <span class="field-label" style="margin-top:18px">How would you like to pay?</span>
   <div class="pay" role="radiogroup">${[['upi','UPI','Scan the QR on the bill folder'],['card','Card','We’ll bring the machine to you'],['cash','Cash','Pay your server']].map(([v,n,d],i)=>`<label for="pay-${v}"><input type="radio" name="pay" id="pay-${v}" value="${v}" ${i?'':'checked'}><span>${n}<small>${d}</small></span></label>`).join('')}</div>
   </div></div>
@@ -1997,7 +2085,7 @@ async function payOnline(btn,cust){
   if(r.status===400){toast(cust?(IS_PU?'Please check your name and phone number.':'Please check your name, phone, address and map link.'):'Some dishes changed. Please review your order.');throw 0}
   if(!r.ok)throw 0;
   const j=await r.json();await loadRzp();
-  const rz=new window.Razorpay({key:j.keyId,amount:j.amount,currency:'INR',name:'Kaaram Kitchen',description:WHERE+' · '+lines.reduce((t,l)=>t+l.qty,0)+' item(s)',order_id:j.orderId,
+  const rz=new window.Razorpay({key:j.keyId,amount:j.amount,currency:'INR',name:SITE.name,description:WHERE+' · '+lines.reduce((t,l)=>t+l.qty,0)+' item(s)',order_id:j.orderId,
    prefill:cust?{name:cust.name,contact:cust.phone}:{},theme:{color:'#17482F'},
    modal:{ondismiss:()=>{if(span.textContent!=='Confirming payment…')reset()}},
    handler:async resp=>{span.textContent='Confirming payment…';
@@ -2035,7 +2123,7 @@ function sendOrder(btn,cust){
    }catch(e){if(e!==0)toast('Couldn’t reach the kitchen. Please try again.');btn.disabled=false;btn.querySelector('span').textContent=lbl;return}
   }else{
    FEED=readFeed();FEED.seq=(FEED.seq||2416)+1;
-   o={no:'KK-'+FEED.seq,at:Date.now(),lines,tip:S.tip,note:S.note,total,eta,...extra};
+   o={no:'OD-'+FEED.seq,at:Date.now(),lines,tip:S.tip,note:S.note,total,eta,...extra};
    FEED.tickets.push({no:o.no,table:TABLE,at:o.at,eta:o.eta,lines,note:S.note,st:0,ts:[o.at],kitchen:false,sample:false,total:o.total,...extra});writeFeed();
   }
   finishOrder(o);
@@ -2078,6 +2166,7 @@ async function loadServerMenu(){
  try{
   const r=await fetch('/api/menu',{cache:'no-store'});if(!r.ok)return;
   SERVER=true;NETFEED=r.headers.get('X-Kaaram-Storage')==='1';PAYON=NETFEED&&r.headers.get('X-Kaaram-Pay')==='1';if(NETFEED)FEED={tickets:[],seq:0,seeded:true};const j=await r.json();
+  const db=document.getElementById('demoBits');if(db)db.hidden=true;
   if(j&&(j.updated||0)>(DATA.updated||0)){DATA=cleanMenu(j);if(!A.on){M=DATA}reindex();renderAll()}
  }catch(e){}
 }
@@ -2220,7 +2309,7 @@ function enterAdmin(view){
  const d=readDraft();
  if(d&&d.base===DATA.pubId){M=cleanMenu(d.menu);A.changes=d.changes||1}
  else{M=clone(DATA);A.changes=0;if(d){lsSet(DRAFT,null);setTimeout(()=>toast('The live menu changed since your last draft, so that draft was cleared.'),400)}}
- reindex();document.body.classList.add('admin');closeSheet();setView(['edit','kitchen','preview','delivery'].includes(view)?view:'edit');
+ reindex();document.body.classList.add('admin');closeSheet();setView(['edit','kitchen','preview','delivery','settings'].includes(view)?view:'edit');
 }
 function signOut(){
  const keep=dirty();stopKitchen();A.on=false;ssSet(ADMIN_SS,null);ssSet(AUTH_SS,null);ssSet('kaaram-cred',null);ssSet('kaaram-role',null);CRED=null;M=DATA;reindex();
@@ -2269,12 +2358,33 @@ function renderAbar(){
  const d=dirty(),open=FEED.tickets.filter(t=>t.st<3).length,kit=A.view==='kitchen',dvw=A.view==='delivery',rider=A.role==='rider',dvN=dvList().filter(t=>!t.delivered).length;
  el.hidden=false;
  const dvTab=['delivery',ic.pin,'Deliveries'+(dvN?` <span class="tcount">${dvN}</span>`:'')];
- const tabs=rider?[dvTab]:[['edit',ic.edit,'Menu'],['kitchen',ic.flame,'Kitchen'+(open?` <span class="tcount">${open}</span>`:'')],dvTab,['preview',ic.eye,'Guest view']];
+ const tabs=rider?[dvTab]:[['edit',ic.edit,'Menu'],['settings',ic.receipt,'Settings'],['kitchen',ic.flame,'Kitchen'+(open?` <span class="tcount">${open}</span>`:'')],dvTab,['preview',ic.eye,'Guest view']];
  el.innerHTML=`<div class="wrap"><div class="who"><span class="badge">${rider?'Rider':'Staff'}</span><span class="st${d?' dirty':''}">${d?`Unpublished menu changes (${A.changes})`:dvw?`Deliveries · ${dvN} to do`:kit?`Kitchen display · ${open} open ticket${open===1?'':'s'}`:DATA.updated?`Live menu · published ${fmtDate(DATA.updated)}`:'Live menu · no edits yet'}</span></div>
   <div class="abtns"><div class="vtabs" role="tablist" aria-label="Staff views">${tabs.map(([k,i,l])=>`<button role="tab" aria-selected="${A.view===k}" data-act="a-view" data-v="${k}">${i}${l}</button>`).join('')}</div>
   ${!rider&&((!kit&&!dvw)||d)?`<button class="abtn" data-act="a-discard" ${d?'':'disabled'}>Discard</button><button class="abtn pub" data-act="a-publish" ${d?'':'disabled'}>Publish changes</button>`:''}
   <button class="abtn" data-act="a-signout">Sign out</button></div></div>`;
  document.documentElement.style.setProperty('--abar-h',el.offsetHeight+'px');
+}
+function renderSettings(){
+ const s=M.site,esc2=esc;
+ const f=(k,label,ph,hint,max)=>`<label class="f"><span>${label}</span><input type="text" data-site="${k}" value="${esc2(s[k])}" maxlength="${max||60}" placeholder="${ph}" autocomplete="off">${hint?`<small class="hint">${hint}</small>`:''}</label>`;
+ $('#menu').innerHTML=`<section class="adm"><div class="adm-head"><div><span class="eyebrow">Settings</span><h2>Restaurant details &amp; look</h2><p>These appear on the home page, the menu, printed bills and the payment screen. Edits stay a draft until you publish them.</p></div></div>
+ <div class="set-grid">
+  <div class="set-card"><h3>Restaurant</h3>
+   ${f('name','Name','Your restaurant name','',60)}${f('tagline','Tagline','Cuisine · Area','Shown under the name.',80)}${f('address','Address','Street, area, city','Printed on bills and shown on the home page.',160)}
+   <div class="two">${f('phone','Phone','+91 …','',20)}${f('closes','Kitchen closes at','11:30 pm','',20)}</div>
+   <div class="two">${f('gstin','GSTIN','Optional, printed on bills','',15)}${f('fssai','FSSAI licence','Optional','',14)}</div>
+   ${f('chef','Chef or owner name','Optional, e.g. Chef Ramana','Used in “Chef’s picks”.',40)}${f('logo','Logo image link','https://…/logo.png','Optional. Must start with https://. Leave empty to use the restaurant’s initials.',300)}
+  </div>
+  <div class="set-card"><h3>Ordering and tax</h3>
+   <div class="two">${f('gst','GST %','5','Total GST, split into CGST and SGST. Use 0 if prices already include tax.',5)}${f('tables','Number of tables','20','',3)}</div>
+   <div class="two">${f('waitDine','Dine-in wait (min)','15–25','',12)}${f('waitPickup','Takeaway ready in (min)','20–30','',12)}</div>
+   ${f('waitDelivery','Delivery time (min)','35–50','',12)}
+   <p class="hint">Online payments use Razorpay, set up in the Vercel project (see the README). Prices in the menu are before GST.</p>
+  </div>
+  <div class="set-card" style="grid-column:1/-1"><h3>Theme</h3><p class="hint" style="margin:0">Pick the colours guests see. Each theme also has a matching dark mode that follows the guest’s phone setting. The page behind this one is already showing your choice.</p>
+   <div class="skins">${SKINS.map(k=>`<button class="skin" type="button" data-act="a-skin" data-id="${k.id}" aria-pressed="${s.skin===k.id}"><span class="sw">${k.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span><b>${k.name}</b><small>${k.note}</small></button>`).join('')}</div></div>
+ </div></section>`;
 }
 function renderManager(){
  const n=M.items.length,off=M.items.filter(i=>i.off).length;
@@ -2397,7 +2507,7 @@ function makeTicket(table,at,st){
  FEED.seq=(FEED.seq||2416)+1;
  const ts=[at];if(st>=1)ts[1]=at+90e3;if(st>=2)ts[2]=Math.min(Date.now()-30e3,at+9*60e3);
  const total=Math.round(lines.reduce((t,l)=>t+l.qty*l.unit,0)*(1+GST));
- return {no:'KK-'+FEED.seq,table:String(table).padStart(2,'0'),at,eta:Math.max(15,...lines.map(l=>(BY[l.id]||{m:15}).m))+5,lines,note:'',st,ts,kitchen:true,sample:true,total};
+ return {no:'OD-'+FEED.seq,table:String(table).padStart(2,'0'),at,eta:Math.max(15,...lines.map(l=>(BY[l.id]||{m:15}).m))+5,lines,note:'',st,ts,kitchen:true,sample:true,total};
 }
 function seedExamples(){
  if(NETFEED||FEED.seeded||!M.items.length)return;FEED.seeded=true;const now=Date.now();
@@ -2454,7 +2564,7 @@ function renderKitchen(){
   h+=`<div class="ktables">${tables.map(tb=>{const ts=byTable[tb],cnt=[0,1,2].map(s=>ts.filter(t=>t.st===s).length),amt=ts.reduce((s,t)=>s+(t.total||0),0);
    return `<article class="ktable"><header><div class="tno"><small>${tb.startsWith('TA·')?'Takeaway':tb.startsWith('DL·')?'Delivery':'Table'}</small>${/^(TA|DL)·/.test(tb)?tb.slice(0,2):tb}</div><div class="tmeta"><b>${ts.length} ticket${ts.length>1?'s':''}</b> · ${ts.reduce((s,t)=>s+t.lines.reduce((u,l)=>u+l.qty,0),0)} items<br>${rs(amt)} incl. GST</div>
     <div class="tchips">${cnt.map((c,s)=>c?`<span class="kchip s${s}">${c} ${KS(ts[0])[s]}</span>`:'').join('')}<button class="kundo" style="width:34px;height:34px" data-act="k-print" data-table="${tb}" aria-label="Print bill for table ${tb}" title="Print bill">${ic.receipt}</button></div></header>${ts.map(t=>ticketHTML(t,false)).join('')}</article>`}).join('')}</div>`;
-  const free=[];for(let i=1;i<=TABLES;i++){const k=String(i).padStart(2,'0');if(!byTable[k])free.push(k)}
+  const free=[];for(let i=1;i<=SITE.tables;i++){const k=String(i).padStart(2,'0');if(!byTable[k])free.push(k)}
   if(free.length)h+=`<div class="kfree">No open orders: ${free.map(f=>`<span>T${f}</span>`).join('')}</div>`;
  } else {
   h+=`<div class="kboard">${[0,1,2].map(s=>{const col=open.filter(t=>t.st===s);return `<div class="kcol"><h3>${['New','Cooking','Ready to serve'][s]}<span class="kchip s${s}">${col.length}</span></h3>${col.map(t=>ticketHTML(t,true)).join('')||`<div class="none">${['Nothing waiting.','Nothing on the stove.','Nothing waiting to go out.'][s]}</div>`}</div>`}).join('')}</div>`;
@@ -2478,9 +2588,10 @@ function setView(v,fromHistory){
 function renderAll(){
  renderAbar();
  const v=A.on?A.view:'guest';
- document.body.classList.toggle('managing',v==='edit'||v==='kitchen'||v==='delivery');
+ applySite((A.on&&M?M:DATA).site);
+ document.body.classList.toggle('managing',v==='edit'||v==='kitchen'||v==='delivery'||v==='settings');
  document.body.classList.toggle('kitchen',v==='kitchen');
- if(v==='edit')renderManager();else if(v==='kitchen')renderKitchen();else if(v==='delivery')renderDelivery();else renderMenu();
+ if(v==='edit')renderManager();else if(v==='settings')renderSettings();else if(v==='kitchen')renderKitchen();else if(v==='delivery')renderDelivery();else renderMenu();
  renderPanel();renderBar();
  const sb=$('#staffBtn');sb.textContent=A.on?'Signed in as admin':'Staff sign-in';
 }
@@ -2537,6 +2648,7 @@ document.addEventListener('click',e=>{
   case 'a-publish':publishMenu(el);break;
   case 'a-discard':openConfirm('Discard your changes?',`${A.changes} unpublished change${A.changes===1?'':'s'} will be lost. The live menu stays as it is.`,'Discard changes',()=>{M=clone(DATA);A.changes=0;reindex();lsSet(DRAFT,null);closeSheet();renderAll();toast('Changes discarded')});break;
   case 'a-signout':signOut();break;
+  case 'a-skin':if(A.on&&SKIN_IDS.includes(el.dataset.id))mutate(m=>{m.site=cleanSite({...m.site,skin:el.dataset.id},DEF_SITE)},'Theme changed. Publish to apply it for guests.');break;
   case 'a-addcat':openCatEditor();break;
   case 'a-editcat':openCatEditor(id);break;
   case 'a-delcat':confirmDelCat(id);break;
@@ -2553,6 +2665,8 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('submit',e=>{e.preventDefault();ctx.confirm&&ctx.confirm()});
 document.addEventListener('change',e=>{
+ const sk=e.target.dataset&&e.target.dataset.site;
+ if(sk&&A.on&&A.view==='settings'){mutate(m=>{m.site=cleanSite({...m.site,[sk]:e.target.value},DEF_SITE)});return}
  const av=e.target.dataset&&e.target.dataset.avail;
  if(av&&A.on&&BY[av]){const it=BY[av],on=e.target.checked;mutate(()=>{it.off=!on},on?`${it.name} is available`:`${it.name} marked sold out`)}
 });
@@ -2597,7 +2711,7 @@ setInterval(()=>{
 /* ---------- Boot ---------- */
 $('#tableNo').textContent=TABLE;
 const hr=new Date().getHours();
-$('#greet').innerHTML=(hr<11?'Good morning.':hr<16?'Good afternoon.':'Good evening.')+' <em>'+(hr<11?'Dosa or pesarattu?':'What are we eating?')+'</em>';
+$('#greet').innerHTML=(hr<11?'Good morning.':hr<16?'Good afternoon.':'Good evening.')+' <em>'+'What are we eating?'+'</em>';
 renderAll();save();sig=S.orders.map(statusIdx).join('');
 const savedView=ssGet(ADMIN_SS),pathView=STAFF_PATH[PATH];
 loadServerMenu().then(async()=>{

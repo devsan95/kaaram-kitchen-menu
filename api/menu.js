@@ -1,4 +1,4 @@
-const { isAuthed, deny, redisConf, loadMenu, saveMenu, readBody } = require('./_lib');
+const { isAuthed, deny, redisConf, loadMenu, saveMenu, readBody, cleanSite } = require('./_lib');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' || req.method === 'HEAD') {
       let v = null;
       try { v = await loadMenu(); } catch (e) { if (e.code !== 'NO_STORAGE') throw e; }
-      res.setHeader('Cache-Control', 'public, s-maxage=20, stale-while-revalidate=40');  // edge-cached: guest page loads cost ~no Redis commands
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=20, stale-while-revalidate=40');  // edge-cached: guest page loads cost ~no Redis commands
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('X-Kaaram-Storage', redisConf() ? '1' : '0');
       res.setHeader('X-Kaaram-Pay', process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET && redisConf() ? '1' : '0');  // online payments available?  // tells the page whether shared orders are available
@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
         res.statusCode = e && e.code === 'BIG' ? 413 : 400;
         return res.end('Invalid menu');
       }
+      obj.site = cleanSite(obj.site);
       try { await saveMenu(JSON.stringify(obj)); }
       catch (e) { res.statusCode = e.code === 'NO_STORAGE' ? 503 : 502; return res.end('Storage unavailable'); }
       return res.end('saved');

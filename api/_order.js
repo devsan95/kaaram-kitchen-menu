@@ -1,6 +1,9 @@
 // Shared order helpers: validation of incoming orders and creation of tickets (used by orders.js and pay.js).
 const { pipe } = require('./_lib');
 
+// Order numbers look like OD-2417. Set ORDER_PREFIX (2-4 letters) in Vercel to brand them per restaurant.
+const PREFIX = (process.env.ORDER_PREFIX || 'OD').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4);
+const NO_RE = /^[A-Z]{2,4}-\d{1,9}$/;
 const HASH = 'kaaram-orders', SEQ = 'kaaram-seq', VER = 'kaaram-ver';  // VER changes on every write, so tablets can ask "anything new?" cheaply
 const KEEP_SERVED_MS = 3 * 3600e3, KEEP_ANY_MS = 12 * 3600e3, MAX_OPEN = 500, RATE_PER_MIN = 12;
 const str = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').slice(0, n) : '');
@@ -77,10 +80,10 @@ async function loadAll() {
 // Creates the ticket and bumps the version so kitchen tablets notice. extra: { pay } and anything else to store.
 async function placeTicket(o, extra = {}) {
   const [seq] = await pipe([['INCR', SEQ]]);
-  const at = Date.now(), no = 'KK-' + (2416 + seq);
+  const at = Date.now(), no = (PREFIX.length >= 2 ? PREFIX : 'OD') + '-' + (2416 + seq);
   const t = { no, table: o.table, type: o.type, customer: o.customer, at, eta: o.eta, lines: o.lines, note: o.note, st: 0, ts: [at], kitchen: true, sample: false, total: o.total, ...extra };
   await pipe([['HSET', HASH, no, JSON.stringify(t)], ['INCR', VER]]);
   return { no, at };
 }
 
-module.exports = { HASH, SEQ, VER, KEEP_SERVED_MS, KEEP_ANY_MS, MAX_OPEN, RATE_PER_MIN, str, num, cleanOrder, loadAll, placeTicket };
+module.exports = { PREFIX, NO_RE, HASH, SEQ, VER, KEEP_SERVED_MS, KEEP_ANY_MS, MAX_OPEN, RATE_PER_MIN, str, num, cleanOrder, loadAll, placeTicket };

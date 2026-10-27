@@ -96,4 +96,19 @@ function readBody(req, max = 2 * 1024 * 1024) {
   });
 }
 
-module.exports = { roleOf, canDeliver, isAuthed, challenge, deny, redis, pipe, clientIp, loadMenu, saveMenu, readBody, redisConf };
+// Restaurant details saved with the published menu (mirrors cleanSite in public/index.html).
+const SKIN_IDS = ['spice', 'royal', 'coastal', 'noir', 'citrus', 'midnight'];
+function cleanSite(raw) {
+  raw = raw && typeof raw === 'object' ? raw : {};
+  const t = (k, n) => (typeof raw[k] === 'string' ? raw[k].replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n) : '');
+  const nn = (k, lo, hi, d) => { const v = Number(raw[k]); return raw[k] !== undefined && raw[k] !== '' && raw[k] !== null && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const logo = t('logo', 300);
+  return {
+    name: t('name', 60) || 'Restaurant', tagline: t('tagline', 80), address: t('address', 160), phone: t('phone', 20), closes: t('closes', 20), chef: t('chef', 40),
+    gstin: t('gstin', 15), fssai: t('fssai', 14), gst: Math.round(nn('gst', 0, 28, 5) * 100) / 100, tables: Math.round(nn('tables', 1, 99, 20)),
+    waitDine: t('waitDine', 12), waitPickup: t('waitPickup', 12), waitDelivery: t('waitDelivery', 12),
+    logo: /^https:\/\/\S+$/.test(logo) ? logo : '', skin: SKIN_IDS.includes(raw.skin) ? raw.skin : 'spice',
+  };
+}
+
+module.exports = { cleanSite, roleOf, canDeliver, isAuthed, challenge, deny, redis, pipe, clientIp, loadMenu, saveMenu, readBody, redisConf };

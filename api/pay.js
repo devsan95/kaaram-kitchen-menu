@@ -12,7 +12,6 @@ const { HASH, VER, MAX_OPEN, cleanOrder, loadAll, placeTicket, num } = require('
 const PEND = 'kaaram-pend:', PAID = 'kaaram-paid:';
 const keyId = () => process.env.RAZORPAY_KEY_ID || '', keySecret = () => process.env.RAZORPAY_KEY_SECRET || '';
 const enabled = () => !!(keyId() && keySecret());
-const GST = 0.05;
 
 // Prices come from the published menu (or the menu built into the page), never from the guest's phone.
 async function menuItems() {
@@ -23,7 +22,15 @@ async function menuItems() {
     const x = /<script type="application\/json" id="menu-data">([\s\S]*?)<\/script>/.exec(html);
     m = x ? JSON.parse(x[1]) : { items: [] };
   }
-  return Object.fromEntries(m.items.map((i) => [i.id, i]));
+  return { byId: Object.fromEntries(m.items.map((i) => [i.id, i])), gst: m.site && Number.isFinite(+m.site.gst) ? +m.site.gst : embeddedGst() };
+}
+function embeddedGst() {
+  try {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public', 'index.html'), 'utf8');
+    const x = /<script type="application\/json" id="menu-data">([\s\S]*?)<\/script>/.exec(html);
+    const g = x && JSON.parse(x[1]).site && +JSON.parse(x[1]).site.gst;
+    return Number.isFinite(g) ? g : 5;
+  } catch (e) { return 5; }
 }
 // Option groups per dish type (prices only). KEEP IN SYNC with OPTS in public/index.html. radio = one choice, check = any subset.
 const OPT_PRICES = {
@@ -47,7 +54,7 @@ function addOnSums(key) {
   return sums;
 }
 // Each line must be a real dish that is on sale, priced at its base price plus a possible combination of its options.
-function priced(o, byId, tipIn) {
+function priced(o, { byId, gst }, tipIn) {
   let sub = 0;
   const lines = [];
   for (const l of o.lines) {
@@ -58,7 +65,7 @@ function priced(o, byId, tipIn) {
     sub += l.qty * l.unit;
   }
   const tip = Math.round(num(tipIn, 0, Math.min(1000, sub)));
-  return { ...o, lines, total: Math.round(sub * (1 + GST) + tip) };
+  return { ...o, lines, total: Math.round(sub * (1 + gst / 100) + tip) };
 }
 const sign = (data, secret) => crypto.createHmac('sha256', secret).update(data).digest('hex');
 const same = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };

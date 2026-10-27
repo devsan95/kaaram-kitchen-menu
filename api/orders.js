@@ -1,11 +1,11 @@
 // Shared kitchen feed.
 //   POST  (public)  place an order            -> { no, at }
-//   GET   (public)  ?nos=KK-1,KK-2  status of those orders only
+//   GET   (public)  ?nos=OD-1,OD-2  status of those orders only
 //   GET   (staff)   every open ticket
 //   PATCH (staff)   { no, st }  move a ticket (0 new, 1 cooking, 2 ready, 3 served)
 const { isAuthed, deny, pipe, clientIp, readBody } = require('./_lib');
 
-const { HASH, SEQ, VER, MAX_OPEN, RATE_PER_MIN, cleanOrder, loadAll } = require('./_order');
+const { NO_RE, PREFIX, HASH, SEQ, VER, MAX_OPEN, RATE_PER_MIN, cleanOrder, loadAll } = require('./_order');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
       const [hits, , open, seq] = await pipe([['INCR', rl], ['EXPIRE', rl, 120], ['HLEN', HASH], ['INCR', SEQ]]);
       if (hits > RATE_PER_MIN) return fail(429, 'slow down');
       if (open > MAX_OPEN && (await loadAll()).length > MAX_OPEN) return fail(503, 'kitchen is full');
-      const at = Date.now(), no = 'KK-' + (2416 + seq);
+      const at = Date.now(), no = (PREFIX.length >= 2 ? PREFIX : 'OD') + '-' + (2416 + seq);
       const t = { no, table: o.table, type: o.type, customer: o.customer, at, eta: o.eta, lines: o.lines, note: o.note, st: 0, ts: [at], kitchen: true, sample: false, total: o.total, pay: { mode: 'cash' } };
       await pipe([['HSET', HASH, no, JSON.stringify(t)], ['INCR', VER]]);
       return res.end(JSON.stringify({ no, at }));
@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
       const q = new URL(req.url, 'http://x').searchParams;
       if (q.has('nos')) {                       // guest: only the orders they name, status only
-        const nos = q.get('nos').split(',').map((x) => x.trim()).filter((x) => /^KK-\d{1,9}$/.test(x)).slice(0, 20);
+        const nos = q.get('nos').split(',').map((x) => x.trim()).filter((x) => NO_RE.test(x)).slice(0, 20);
         if (!nos.length) return res.end('[]');
         const [rows] = await pipe([['HMGET', HASH, ...nos]]);
         return res.end(JSON.stringify(nos.map((no, i) => {
@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
     if (req.method === 'PATCH') {
       if (!isAuthed(req)) return deny(res);
       let b; try { b = JSON.parse(await readBody(req, 4096)); } catch (e) { return fail(400, 'bad json'); }
-      if (!b || !/^KK-\d{1,9}$/.test(b.no || '') || ![0, 1, 2, 3].includes(b.st)) return fail(400, 'invalid');
+      if (!b || !NO_RE.test(b.no || '') || ![0, 1, 2, 3].includes(b.st)) return fail(400, 'invalid');
       const [raw] = await pipe([['HGET', HASH, b.no]]);
       if (!raw) return fail(404, 'no such ticket');
       const t = JSON.parse(raw);

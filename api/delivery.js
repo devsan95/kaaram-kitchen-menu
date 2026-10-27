@@ -2,6 +2,7 @@
 //   GET   ?v=<version>  tickets that are packed, on the road, or delivered in the last 30 min
 //   PATCH { no, action: 'pickup' | 'delivered' | 'undo' }
 const { canDeliver, deny, pipe, readBody } = require('./_lib');
+const { NO_RE } = require('./_order');
 
 const HASH = 'kaaram-orders', VER = 'kaaram-ver', KEEP_DELIVERED_MS = 30 * 60e3;
 
@@ -32,7 +33,7 @@ module.exports = async (req, res) => {
 
     if (req.method === 'PATCH') {
       let b; try { b = JSON.parse(await readBody(req, 4096)); } catch (e) { return fail(400, 'bad json'); }
-      if (!b || !/^KK-\d{1,9}$/.test(b.no || '') || !['pickup', 'delivered', 'undo'].includes(b.action)) return fail(400, 'invalid');
+      if (!b || !NO_RE.test(b.no || '') || !['pickup', 'delivered', 'undo'].includes(b.action)) return fail(400, 'invalid');
       const [raw] = await pipe([['HGET', HASH, b.no]]);
       if (!raw) return fail(404, 'no such ticket');
       const t = JSON.parse(raw);

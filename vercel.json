@@ -5,8 +5,12 @@
       "destination": "/api/admin?view=admin"
     },
     {
-      "source": "/admin/preview",
+      "source": "/preview",
       "destination": "/api/admin?view=preview"
+    },
+    {
+      "source": "/settings",
+      "destination": "/api/admin?view=settings"
     },
     {
       "source": "/kitchen",
