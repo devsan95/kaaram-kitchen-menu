@@ -114,7 +114,7 @@ h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:
 .sec-head p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--turmeric-ink);background:var(--turmeric-soft);padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:6px}
 .scroller{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,250px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-inline:-16px;padding:2px 16px 14px;scroll-padding-inline:16px}
-@media (min-width:1024px){.scroller{margin-inline:0;padding-inline:0;scroll-padding-inline:0}}
+@media (min-width:1024px){.scroller{margin-inline:0;padding-inline:0 40px;scroll-padding-inline:0;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}.layout{column-gap:44px}}
 .scroller::-webkit-scrollbar{display:none}
 .pick{scroll-snap-align:start;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:10px;text-align:left;cursor:pointer;transition:transform .2s,box-shadow .2s}
 .pick:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
