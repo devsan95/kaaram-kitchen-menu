@@ -1,0 +1,10 @@
+{
+  "rewrites": [{ "source": "/admin", "destination": "/api/admin" }],
+  "functions": { "api/admin.js": { "includeFiles": "public/index.html" } },
+  "headers": [
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "same-origin" }
+    ] }
+  ]
+}
