@@ -100,7 +100,7 @@ module.exports = async (req, res) => {
         const [rows] = await pipe([['HMGET', HASH, ...nos]]);
         return res.end(JSON.stringify(nos.map((no, i) => {
           const t = rows[i] && JSON.parse(rows[i]);
-          return t ? { no, st: t.st, ts: t.ts } : { no, st: 3, ts: [], gone: true };
+          return t ? { no, st: t.st, ts: t.ts, dl: t.delivered || 0 } : { no, st: 3, ts: [], dl: 1, gone: true };
         })));
       }
       if (!isAuthed(req)) return deny(res);     // staff: the full feed, or just "unchanged" if their version is current
@@ -121,6 +121,7 @@ module.exports = async (req, res) => {
       const t = JSON.parse(raw);
       if (b.st > t.st) t.ts[b.st] = Date.now(); else if (b.st < t.st) t.ts.length = b.st + 1;
       t.st = b.st; t.kitchen = true;
+      if (b.st < 3) delete t.delivered;          // moving a ticket back un-delivers it
       await pipe([['HSET', HASH, b.no, JSON.stringify(t)], ['INCR', VER]]);
       return res.end(JSON.stringify({ ok: true }));
     }

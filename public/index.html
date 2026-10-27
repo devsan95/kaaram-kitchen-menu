@@ -427,6 +427,16 @@ body.managing .toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .cust{background:var(--surface-2);border-radius:10px;padding:8px 10px;font-size:13.5px;display:grid;gap:2px}
 .cust a{color:var(--leaf);font-weight:700}
 .cust .maplink{display:inline-block;margin-top:2px}
+/* Delivery screen */
+.dsec{display:grid;gap:10px}.dsec h3{font-size:19px;display:flex;align-items:center;gap:8px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px;align-items:start}
+.dcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 14px 14px 19px;display:grid;gap:10px;position:relative;overflow:hidden;min-width:0}
+.dcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--k-cook)}
+.dcard.road::before{background:var(--k-ready)}.dcard.done::before{background:var(--line)}.dcard.done{opacity:.8}
+.dname{font-family:var(--f-display);font-weight:800;font-size:22px;line-height:1.1}
+.dact{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dact .btn{height:44px}
+.dlines{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:14px}.dlines li{display:grid;grid-template-columns:30px 1fr;gap:4px}.dlines .q{font-weight:800}.dlines small{color:var(--muted)}
+.dcollect{background:var(--turmeric-soft);color:var(--turmeric-ink);border-radius:10px;padding:8px 10px;font-size:14px;font-weight:600}
 /* Kitchen display: ticket status colours */
 :root{--k-new:#A86A0C;--k-new-soft:#FBEFD9;--k-cook:#1D6B42;--k-cook-soft:#E1EFE5;--k-ready:#2F64A8;--k-ready-soft:#E3ECF8;--k-late:#C23C25}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--k-new:#F1BC3A;--k-new-soft:#3A2F12;--k-cook:#52C283;--k-cook-soft:#173826;--k-ready:#82B4F2;--k-ready-soft:#17273B;--k-late:#EF7259}}
@@ -1561,7 +1571,9 @@ const ticketOf=no=>FEED.tickets.find(t=>t.no===no);
 /* A guest's tracker follows the kitchen once a kitchen display is open in this browser (or has touched the ticket); otherwise it runs on a demo timer */
 const followsKitchen=o=>{const t=ticketOf(o.no);return t&&(t.kitchen||Date.now()-HB<20000)?t:null};
 const statusIdx=o=>{const k=followsKitchen(o);if(k)return k.st;if(NETFEED)return 0;const t=(Date.now()-o.at)/1000;return t<12?0:t<35?1:t<55?2:3};
-const activeOrders=()=>S.orders.filter(o=>statusIdx(o)<3);
+const isDelivered=o=>{const t=ticketOf(o.no);return !!(t&&t.delivered)};
+const needsTracking=o=>statusIdx(o)<3||(IS_TA&&!isDelivered(o));
+const activeOrders=()=>S.orders.filter(needsTracking);
 const fmtTime=t=>new Date(t).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
 const fmtDate=t=>new Date(t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 
@@ -1723,7 +1735,7 @@ function openCart(keep){
 }
 function trackHTML(o){const si=statusIdx(o);
  const k=followsKitchen(o),times=k?k.ts:[o.at,o.at+12e3,o.at+35e3,o.at+55e3];
- return `<ol class="track">${STEPS.map(([t,d],i)=>`<li class="${i<si?'done':i===si?(si===3?'done':'now'):'todo'}"><span class="bub">${i<si||si===3&&i===3?ic.check:''}</span><span><b>${t}</b><small>${i===si?d:i<si?'Done':''}</small></span><time>${i<=si&&times[i]?fmtTime(times[i]):''}</time></li>`).join('')}</ol>`}
+ return `<ol class="track">${STEPS.map(([t0,d0],i)=>{const dl=IS_TA&&i===3&&k&&k.delivered,t=dl?'Delivered':t0,d=dl?'Enjoy your meal':d0;return `<li class="${i<si?'done':i===si?(si===3?'done':'now'):'todo'}"><span class="bub">${i<si||si===3&&i===3?ic.check:''}</span><span><b>${t}</b><small>${i===si?d:i<si?'Done':''}</small></span><time>${i<=si&&(dl?k.delivered:times[i])?fmtTime(dl?k.delivered:times[i]):''}</time></li>`}).join('')}</ol>`}
 function orderCard(o){const n=o.lines.reduce((t,l)=>t+l.qty,0);
  return `<div class="order-card"><header><h3>Order ${o.no}</h3><span class="pill num">${fmtTime(o.at)} · ${rs(o.total)}</span></header>
   <p class="order-items">${o.lines.map(l=>`${l.qty} × ${esc(l.name)}`).join(', ')} <span class="num">(${n} item${n>1?'s':''})</span></p>${trackHTML(o)}</div>`}
@@ -1913,7 +1925,7 @@ const HTTP=/^https?:$/.test(location.protocol);
 let SERVER=false,CRED=ssGet('kaaram-cred');
 const b64=t=>btoa(unescape(encodeURIComponent(t)));
 const authHdr=()=>CRED?{Authorization:'Basic '+CRED}:{};
-async function apiAuth(){try{const r=await fetch('/api/auth',{headers:authHdr(),cache:'no-store'});return r.ok}catch(e){return false}}
+async function apiAuth(){try{const r=await fetch('/api/auth',{headers:authHdr(),cache:'no-store'});if(!r.ok)return '';const j=await r.json();return j.role||'staff'}catch(e){return ''}}
 async function loadServerMenu(){
  if(!HTTP)return;
  try{
@@ -1921,6 +1933,47 @@ async function loadServerMenu(){
   SERVER=true;NETFEED=r.headers.get('X-Kaaram-Storage')==='1';if(NETFEED)FEED={tickets:[],seq:0,seeded:true};const j=await r.json();
   if(j&&(j.updated||0)>(DATA.updated||0)){DATA=cleanMenu(j);if(!A.on){M=DATA}reindex();renderAll()}
  }catch(e){}
+}
+/* ---------- Delivery screen (riders and staff) ---------- */
+let dVer='',dPrimed=false,dSeen=new Set();
+const dvList=()=>FEED.tickets.filter(t=>t.type==='takeaway'&&t.st>=2&&t.customer&&!t.sample);
+function dvCard(t){
+ const c=t.customer,state=t.delivered?'Delivered':t.st===3?'On the road':'Ready for pickup',since=t.ts[t.delivered?4:t.st]||t.at;
+ const items=t.lines.map(l=>`<li><span class="q">${l.qty}×</span><span>${esc(l.name)}${l.opt?` <small>${esc(l.opt)}</small>`:''}</span></li>`).join('');
+ return `<article class="dcard ${t.delivered?'done':t.st===3?'road':'ready'}" aria-label="Delivery ${t.no} for ${esc(c.name)}, ${state}">
+  <div class="tk-top"><span class="no">${t.no}</span><span class="kchip ${t.delivered?'s3':t.st===3?'s2':'s1'}">${state}</span><span class="timer" data-since="${since}" data-st="9" title="Time in this state">${ic.clock}<span>${mmss(Date.now()-since)}</span></span></div>
+  <div class="dname">${esc(c.name)}</div>
+  ${custHTML(c,true)}
+  <div class="dact"><a class="btn ghost" href="tel:${esc(c.phone)}">Call</a>${/^https:\/\//.test(c.map)?`<a class="btn ghost" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">${ic.pin}Navigate</a>`:''}</div>
+  <ul class="dlines">${items}</ul>${t.note?`<span class="knote">Note: ${esc(t.note)}</span>`:''}
+  <div class="dcollect">Collect <b class="num">${rs(t.total)}</b> on delivery · cash or UPI</div>
+  <div class="tk-act">${t.st===3||t.delivered?`<button class="kundo" data-act="d-undo" data-no="${t.no}" aria-label="Undo for ${t.no}">${ic.undo}</button>`:''}${t.delivered?'':t.st===2?`<button class="kbump n2" data-act="d-pickup" data-no="${t.no}">Picked up · on my way${ic.arrow}</button>`:`<button class="kbump" data-act="d-done" data-no="${t.no}">Mark delivered${ic.check}</button>`}</div>
+ </article>`;
+}
+function renderDelivery(){
+ const all=dvList(),ready=all.filter(t=>t.st===2&&!t.delivered),road=all.filter(t=>t.st===3&&!t.delivered),done=all.filter(t=>t.delivered).sort((a,b)=>b.delivered-a.delivered);
+ const sec=(title,hint,list)=>`<section class="dsec"><h3>${title} <span class="kchip s${title==='Ready for pickup'?1:title==='On the road'?2:3}">${list.length}</span></h3>${list.length?`<div class="dgrid">${list.map(dvCard).join('')}</div>`:`<p class="hint">${hint}</p>`}</section>`;
+ $('#menu').innerHTML=`<section class="kds"><div class="kds-head"><div><span class="eyebrow">Delivery</span><h2>Deliveries</h2>
+  <p>Oldest first. Orders appear here when the kitchen marks them packed. Tap Navigate for the route, Call if you can’t find the door.</p></div></div>
+  ${sec('Ready for pickup','Nothing is packed right now.',ready)}${sec('On the road','No orders are out for delivery.',road)}${sec('Delivered','Delivered orders show here for 30 minutes so you can undo a mis-tap.',done)}</section>`;
+}
+async function netDelivery(no,action){
+ try{
+  const r=await fetch('/api/delivery',{method:'PATCH',headers:{'Content-Type':'application/json',...authHdr()},body:JSON.stringify({no,action})});
+  if(r.status===401){toast('Your session expired. Sign in again.');signOut()}
+  else if(!r.ok){toast('Couldn’t save that. Check your connection.');dVer='';nextPollAt=0}
+ }catch(e){toast('Couldn’t save that. Check your connection.');dVer='';nextPollAt=0}
+}
+function dvAct(no,action){
+ const t=ticketOf(no);if(!t)return;const now=Date.now();
+ if(action==='pickup'){if(t.st===2){t.st=3;t.ts[3]=now}}
+ else if(action==='delivered'){if(t.st===2){t.st=3;t.ts[3]=now}if(!t.delivered){t.delivered=now;t.ts[4]=now}}
+ else if(t.delivered){delete t.delivered;t.ts.length=4}
+ else if(t.st===3){t.st=2;t.ts.length=3}
+ t.kitchen=true;
+ if(NETFEED){nextPollAt=0;netDelivery(no,action)}else writeFeed();
+ renderDelivery();renderAbar();
+ toast(action==='pickup'?`${no} is on the road`:action==='delivered'?`${no} delivered`:`${no} moved back`);
 }
 let kPrimed=false,kVer='',pollBusy=false,nextPollAt=0,lastChangeAt=Date.now();
 async function netPatch(t){
@@ -1933,10 +1986,15 @@ async function netPatch(t){
 }
 /* Poll the shared order feed. Staff on the kitchen view ask "anything new?" every 3 s (8 s after 2 quiet minutes, 15 s after 10);
    guests check their own unserved orders every 10 s, and only while the page is visible. This keeps Redis usage low. */
+function refreshTrack(){
+ renderBar();renderPanel();
+ if(sheetType==='orders')openOrders();
+ if(sheetType==='placed'){const o=S.orders.find(x=>x.no===ctx.order);const c=body.querySelector('.order-card');if(o&&c)c.outerHTML=orderCard(o)}
+}
 async function pollOrders(){
  if(!NETFEED||pollBusy||Date.now()<nextPollAt)return;
- const kit=A.on&&A.view==='kitchen',nos=S.orders.filter(o=>statusIdx(o)<3).map(o=>o.no);
- if(!kit&&(!nos.length||document.hidden))return;
+ const kit=A.on&&A.view==='kitchen',dv=A.on&&A.view==='delivery',nos=S.orders.filter(needsTracking).map(o=>o.no);
+ if(!kit&&!dv&&(!nos.length||document.hidden))return;
  pollBusy=true;
  try{
   if(kit){
@@ -1951,13 +2009,26 @@ async function pollOrders(){
      else{lastChangeAt=Date.now();feedChanged()}
     }
    }
+  }else if(dv){
+   nextPollAt=Date.now()+(dvList().some(t=>!t.delivered)?5000:15000);
+   const r=await fetch('/api/delivery?v='+encodeURIComponent(dVer),{headers:authHdr(),cache:'no-store'});
+   if(r.status===401){toast('Your session expired. Sign in again.');signOut();return}
+   if(r.ok){
+    const j=await r.json();
+    if(!j.same){
+     dVer=j.v;FEED.tickets=j.tickets;
+     const fresh=j.tickets.filter(t=>t.st===2&&!dSeen.has(t.no));j.tickets.forEach(t=>dSeen.add(t.no));
+     if(dPrimed&&fresh.length){chime();toast(fresh.length>1?`${fresh.length} orders ready for pickup`:`${fresh[0].no} is ready for pickup`)}
+     dPrimed=true;renderDelivery();renderAbar();
+    }
+   }
   }else{
    nextPollAt=Date.now()+10000;
    const r=await fetch('/api/orders?nos='+encodeURIComponent(nos.slice(-20).join(',')),{cache:'no-store'});
    if(r.ok)(await r.json()).forEach(u=>{
     const t=ticketOf(u.no);
-    if(t){t.st=u.st;t.ts=u.ts&&u.ts.length?u.ts:t.ts}
-    else FEED.tickets.push({no:u.no,table:TABLE,at:(S.orders.find(o=>o.no===u.no)||{}).at||Date.now(),lines:[],st:u.st,ts:u.ts||[],kitchen:true,sample:false});
+    if(t){t.st=u.st;t.ts=u.ts&&u.ts.length?u.ts:t.ts;const was=t.delivered;t.delivered=u.dl||0;if(IS_TA&&u.dl&&!was){toast('Your order has been delivered. Enjoy!');refreshTrack()}}
+    else FEED.tickets.push({no:u.no,table:TABLE,at:(S.orders.find(o=>o.no===u.no)||{}).at||Date.now(),lines:[],st:u.st,ts:u.ts||[],kitchen:true,sample:false,delivered:u.dl||0});
    });
   }
  }catch(e){}finally{pollBusy=false}
@@ -1966,11 +2037,11 @@ setInterval(pollOrders,1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)nextPollAt=0});
 let loginFails=0;
 function openSignin(next){
- A.next=next==='kitchen'?'kitchen':'edit';
+ A.next=next==='kitchen'||next==='delivery'?next:'edit';
  openSheet(`<div class="sheet-scroll"><div class="pad form" style="padding-top:28px">${X}
   <div class="lock">${ic.lock}</div>
-  <div><span class="eyebrow">Staff only</span><h2 class="item-title">${A.next==='kitchen'?'Open the kitchen display':'Manage the menu'}</h2>
-  <p class="item-desc">${A.next==='kitchen'?'See incoming orders by table and move each ticket from new to cooking, ready and served.':'Add, edit and remove dishes and categories, mark dishes sold out, and publish the changes.'}</p></div>
+  <div><span class="eyebrow">Staff only</span><h2 class="item-title">${A.next==='delivery'?'Open the delivery screen':A.next==='kitchen'?'Open the kitchen display':'Manage the menu'}</h2>
+  <p class="item-desc">${A.next==='delivery'?'See packed takeaway orders with the customer’s phone, address and map link, and mark each one picked up and delivered.':A.next==='kitchen'?'See incoming orders by table and move each ticket from new to cooking, ready and served.':'Add, edit and remove dishes and categories, mark dishes sold out, and publish the changes.'}</p></div>
   <form id="loginForm" autocomplete="on" class="form" novalidate>
    <label class="f"><span>Username</span><input type="text" name="username" id="lgUser" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
    <label class="f"><span>Password</span><input type="password" name="password" id="lgPass" autocomplete="current-password" required></label>
@@ -1985,11 +2056,11 @@ async function doLogin(){
  if(!u||!pw)return fail('Enter your username and password.');
  if(loginFails>=5)return fail('Too many attempts. Wait a minute and try again.');
  let ok=false;
- if(SERVER){CRED=b64(u+':'+pw);ok=await apiAuth();if(ok)ssSet('kaaram-cred',CRED);else CRED=null}
+ if(SERVER){CRED=b64(u+':'+pw);const role=await apiAuth();ok=!!role;if(ok){ssSet('kaaram-cred',CRED);ssSet('kaaram-role',role)}else CRED=null}
  else ok=sha256(u+':'+pw)===AUTH.hash;
  if(ok){
-  loginFails=0;ssSet(AUTH_SS,'1');enterAdmin(A.next);
-  toast(A.next==='kitchen'?'Signed in to the kitchen display':'Signed in. Your edits stay a draft until you publish.');return;
+  loginFails=0;ssSet(AUTH_SS,'1');const rider=ssGet('kaaram-role')==='rider',nxt=rider?'delivery':A.next;enterAdmin(nxt);
+  toast(nxt==='delivery'?'Signed in to the delivery screen':nxt==='kitchen'?'Signed in to the kitchen display':'Signed in. Your edits stay a draft until you publish.');return;
  }
  loginFails++;if(loginFails>=5)setTimeout(()=>{loginFails=0},60000);
  fail('Incorrect username or password.');$('#lgPass').value='';$('#lgPass').focus();
@@ -1997,14 +2068,15 @@ async function doLogin(){
 function readDraft(){try{return JSON.parse(lsGet(DRAFT)||'null')}catch(e){return null}}
 function stashDraft(){lsSet(DRAFT,dirty()?JSON.stringify({base:DATA.pubId,menu:M,changes:A.changes}):null)}
 function enterAdmin(view){
- A.on=true;
+ A.on=true;A.role=ssGet('kaaram-role')==='rider'?'rider':'staff';
+ if(A.role==='rider'){M=clone(DATA);reindex();document.body.classList.add('admin');closeSheet();setView('delivery');return}
  const d=readDraft();
  if(d&&d.base===DATA.pubId){M=cleanMenu(d.menu);A.changes=d.changes||1}
  else{M=clone(DATA);A.changes=0;if(d){lsSet(DRAFT,null);setTimeout(()=>toast('The live menu changed since your last draft, so that draft was cleared.'),400)}}
- reindex();document.body.classList.add('admin');closeSheet();setView(['edit','kitchen','preview'].includes(view)?view:'edit');
+ reindex();document.body.classList.add('admin');closeSheet();setView(['edit','kitchen','preview','delivery'].includes(view)?view:'edit');
 }
 function signOut(){
- const keep=dirty();stopKitchen();A.on=false;ssSet(ADMIN_SS,null);ssSet(AUTH_SS,null);ssSet('kaaram-cred',null);CRED=null;M=DATA;reindex();
+ const keep=dirty();stopKitchen();A.on=false;ssSet(ADMIN_SS,null);ssSet(AUTH_SS,null);ssSet('kaaram-cred',null);ssSet('kaaram-role',null);CRED=null;M=DATA;reindex();
  document.body.classList.remove('admin','managing');renderAll();
  toast(keep?'Signed out. Your unpublished draft is saved on this device.':'Signed out');
 }
@@ -2046,12 +2118,13 @@ async function publishMenu(btn){
 function renderAbar(){
  const el=$('#abar');
  if(!A.on){el.hidden=true;el.innerHTML='';document.documentElement.style.setProperty('--abar-h','0px');return}
- const d=dirty(),open=FEED.tickets.filter(t=>t.st<3).length,kit=A.view==='kitchen';
+ const d=dirty(),open=FEED.tickets.filter(t=>t.st<3).length,kit=A.view==='kitchen',dvw=A.view==='delivery',rider=A.role==='rider',dvN=dvList().filter(t=>!t.delivered).length;
  el.hidden=false;
- const tabs=[['edit',ic.edit,'Menu'],['kitchen',ic.flame,'Kitchen'+(open?` <span class="tcount">${open}</span>`:'')],['preview',ic.eye,'Guest view']];
- el.innerHTML=`<div class="wrap"><div class="who"><span class="badge">Staff</span><span class="st${d?' dirty':''}">${d?`Unpublished menu changes (${A.changes})`:kit?`Kitchen display · ${open} open ticket${open===1?'':'s'}`:DATA.updated?`Live menu · published ${fmtDate(DATA.updated)}`:'Live menu · no edits yet'}</span></div>
+ const dvTab=['delivery',ic.pin,'Delivery'+(dvN?` <span class="tcount">${dvN}</span>`:'')];
+ const tabs=rider?[dvTab]:[['edit',ic.edit,'Menu'],['kitchen',ic.flame,'Kitchen'+(open?` <span class="tcount">${open}</span>`:'')],dvTab,['preview',ic.eye,'Guest view']];
+ el.innerHTML=`<div class="wrap"><div class="who"><span class="badge">${rider?'Rider':'Staff'}</span><span class="st${d?' dirty':''}">${d?`Unpublished menu changes (${A.changes})`:dvw?`Deliveries · ${dvN} to do`:kit?`Kitchen display · ${open} open ticket${open===1?'':'s'}`:DATA.updated?`Live menu · published ${fmtDate(DATA.updated)}`:'Live menu · no edits yet'}</span></div>
   <div class="abtns"><div class="vtabs" role="tablist" aria-label="Staff views">${tabs.map(([k,i,l])=>`<button role="tab" aria-selected="${A.view===k}" data-act="a-view" data-v="${k}">${i}${l}</button>`).join('')}</div>
-  ${!kit||d?`<button class="abtn" data-act="a-discard" ${d?'':'disabled'}>Discard</button><button class="abtn pub" data-act="a-publish" ${d?'':'disabled'}>Publish changes</button>`:''}
+  ${!rider&&((!kit&&!dvw)||d)?`<button class="abtn" data-act="a-discard" ${d?'':'disabled'}>Discard</button><button class="abtn pub" data-act="a-publish" ${d?'':'disabled'}>Publish changes</button>`:''}
   <button class="abtn" data-act="a-signout">Sign out</button></div></div>`;
  document.documentElement.style.setProperty('--abar-h',el.offsetHeight+'px');
 }
@@ -2159,7 +2232,7 @@ const KST_T=['New','Cooking','Packed','Dispatched'],KNEXT_T=['Start cooking','Ma
 const KS=t=>t&&t.type==='takeaway'?KST_T:KST,KN=t=>t&&t.type==='takeaway'?KNEXT_T:KNEXT;
 const gk=t=>t.type==='takeaway'?'TA·'+t.no:t.table;              // kitchen card key: one card per takeaway order
 const whereOf=t=>t.type==='takeaway'?'Takeaway'+(t.customer?' · '+t.customer.name:''):'Table '+t.table;
-const custHTML=c=>`<div class="cust"><b>${esc(c.name)}</b> · <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a><div>${esc(c.address)}</div>${/^https:\/\//.test(c.map)?`<a class="maplink" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>`:''}</div>`;
+const custHTML=(c,noName)=>`<div class="cust">${noName?'':`<b>${esc(c.name)}</b> · `}<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a><div>${esc(c.address)}</div>${/^https:\/\//.test(c.map)?`<a class="maplink" href="${esc(c.map)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>`:''}</div>`;
 const NOTES=['No onion, no garlic','Less oil please','Extra spicy','Allergic to peanuts','Kid’s portion, mild','Serve together with the biryani'];
 let KV=ssGet('kaaram-kv')==='board'?'board':'tables',demoOn=ssGet('kaaram-demo')==='1',demoT=null,audio=null,soundOn=false,wake=null,seen=new Set();
 const mmss=ms=>{const s=Math.max(0,Math.floor(ms/1000)),m=Math.floor(s/60);return m>=60?`${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`:`${m}:${String(s%60).padStart(2,'0')}`};
@@ -2188,6 +2261,7 @@ function startKitchen(){
  scheduleDemo();
 }
 function feedChanged(){
+ if(A.on&&A.view==='delivery'){renderDelivery();renderAbar();return}
  if(!(A.on&&A.view==='kitchen'))return;
  const fresh=FEED.tickets.filter(t=>!seen.has(t.no));fresh.forEach(t=>seen.add(t.no));
  if(fresh.length){chime();toast(fresh.length>1?`${fresh.length} new orders`:`New order · ${whereOf(fresh[0])}`)}
@@ -2244,15 +2318,16 @@ function tickTimers(){const now=Date.now();document.querySelectorAll('[data-sinc
 function setView(v){
  const was=A.view;A.view=v;ssSet(ADMIN_SS,v);
  if(v==='kitchen'){FEED=readFeed();startKitchen()}else if(was==='kitchen')stopKitchen();
+ if(v==='delivery'){FEED=readFeed();dVer='';dPrimed=false;nextPollAt=0}
  renderAll();scrollTo(0,0);
 }
 
 function renderAll(){
  renderAbar();
  const v=A.on?A.view:'guest';
- document.body.classList.toggle('managing',v==='edit'||v==='kitchen');
+ document.body.classList.toggle('managing',v==='edit'||v==='kitchen'||v==='delivery');
  document.body.classList.toggle('kitchen',v==='kitchen');
- if(v==='edit')renderManager();else if(v==='kitchen')renderKitchen();else renderMenu();
+ if(v==='edit')renderManager();else if(v==='kitchen')renderKitchen();else if(v==='delivery')renderDelivery();else renderMenu();
  renderPanel();renderBar();
  const sb=$('#staffBtn');sb.textContent=A.on?'Signed in as admin':'Staff sign-in';
 }
@@ -2295,7 +2370,10 @@ document.addEventListener('click',e=>{
   case 'clearall':Q='';$('#q').value='';$('#qclr').hidden=true;Object.keys(F2).forEach(k=>F2[k]=false);syncChips();renderMenu();break;
   case 'reset':lsSet(KEY+':'+TABLE,null);S={cart:[],orders:[],note:'',tip:0,bill:false,last:{}};refreshCtls();renderPanel();renderBar();toast('Demo reset');break;
   case 'signin':if(A.on)setView('edit');else openSignin('edit');break;
-  case 'a-view':if(el.dataset.v!==A.view)setView(el.dataset.v);break;
+  case 'a-view':if(A.role==='rider'&&el.dataset.v!=='delivery')break;if(el.dataset.v!==A.view)setView(el.dataset.v);break;
+  case 'd-pickup':dvAct(el.dataset.no,'pickup');break;
+  case 'd-done':dvAct(el.dataset.no,'delivered');break;
+  case 'd-undo':dvAct(el.dataset.no,'undo');break;
   case 'k-view':KV=el.dataset.v==='board'?'board':'tables';ssSet('kaaram-kv',KV);renderKitchen();break;
   case 'k-sound':soundOn=!soundOn;if(soundOn&&!audio){try{audio=new (window.AudioContext||window.webkitAudioContext)()}catch(_){soundOn=false;toast('Sound isn’t available in this browser.')}}
    if(audio&&audio.state==='suspended')audio.resume().catch(()=>{});chime();renderKitchen();break;
@@ -2371,11 +2449,14 @@ $('#greet').innerHTML=(hr<11?'Good morning.':hr<16?'Good afternoon.':'Good eveni
 renderAll();save();sig=S.orders.map(statusIdx).join('');
 const savedView=ssGet(ADMIN_SS);
 loadServerMenu().then(async()=>{
- if(SERVER&&location.pathname.replace(/\/+$/,'')==='/admin'&&await apiAuth()){ssSet(AUTH_SS,'1');if(!A.on)enterAdmin('edit')}
+ const path=location.pathname.replace(/\/+$/,'');
+ if(SERVER&&path==='/admin'&&await apiAuth()==='staff'){ssSet(AUTH_SS,'1');ssSet('kaaram-role','staff');if(!A.on)enterAdmin('edit')}
+ if(SERVER&&path==='/delivery'){const role=await apiAuth();if(role){ssSet(AUTH_SS,'1');ssSet('kaaram-role',role);if(!A.on)enterAdmin('delivery')}}
 });
 if(savedView){if(isAuthed())enterAdmin(savedView);else ssSet(ADMIN_SS,null)}
 else if(location.hash==='#admin')openSignin('edit');
 else if(location.hash==='#kitchen')openSignin('kitchen');
+else if(location.hash==='#delivery')openSignin('delivery');
 })();
 </script>
 

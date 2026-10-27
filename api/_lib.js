@@ -3,22 +3,32 @@ const crypto = require('crypto');
 const KEY = 'kaaram-menu';
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest();
 
-// HTTP Basic Auth against KAARAM_USER / KAARAM_PASS (no defaults: unset means nobody can sign in).
-function isAuthed(req) {
-  const user = process.env.KAARAM_USER, pass = process.env.KAARAM_PASS;
-  if (!user || !pass) return false;
+// HTTP Basic Auth. Two roles:
+//   staff: KAARAM_USER / KAARAM_PASS             (everything)
+//   rider: KAARAM_RIDER_USER / KAARAM_RIDER_PASS (optional; delivery screen only)
+// There are no defaults: unset variables mean nobody can sign in with that role.
+function roleOf(req) {
   const h = req.headers.authorization || '';
-  if (!/^basic /i.test(h)) return false;
+  if (!/^basic /i.test(h)) return null;
   let u = '', p = '';
   try {
     const t = Buffer.from(h.slice(6), 'base64').toString('utf8');
     const i = t.indexOf(':');
     u = t.slice(0, i); p = t.slice(i + 1);
-  } catch (e) { return false; }
-  const a = crypto.timingSafeEqual(sha(u), sha(user));
-  const b = crypto.timingSafeEqual(sha(p), sha(pass));
-  return a && b;
+  } catch (e) { return null; }
+  const same = (a, b) => crypto.timingSafeEqual(sha(a), sha(b));
+  const check = (uv, pv) => {
+    const user = process.env[uv], pass = process.env[pv];
+    if (!user || !pass) return false;
+    const a = same(u, user), b = same(p, pass);
+    return a && b;
+  };
+  if (check('KAARAM_USER', 'KAARAM_PASS')) return 'staff';
+  if (check('KAARAM_RIDER_USER', 'KAARAM_RIDER_PASS')) return 'rider';
+  return null;
 }
+const isAuthed = (req) => roleOf(req) === 'staff';   // staff only (menu, kitchen)
+const canDeliver = (req) => !!roleOf(req);           // staff or rider (delivery screen)
 
 function challenge(res) {
   res.statusCode = 401;
@@ -75,4 +85,4 @@ function readBody(req, max = 2 * 1024 * 1024) {
   });
 }
 
-module.exports = { isAuthed, challenge, deny, redis, pipe, clientIp, loadMenu, saveMenu, readBody, redisConf };
+module.exports = { roleOf, canDeliver, isAuthed, challenge, deny, redis, pipe, clientIp, loadMenu, saveMenu, readBody, redisConf };

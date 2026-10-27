@@ -5,6 +5,10 @@
       "destination": "/api/admin"
     },
     {
+      "source": "/delivery",
+      "destination": "/api/admin?view=delivery"
+    },
+    {
       "source": "/takeaway",
       "destination": "/index.html"
     }

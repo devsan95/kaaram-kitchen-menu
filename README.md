@@ -31,3 +31,9 @@ Vercel serves everything over HTTPS, so Basic Auth credentials are protected in 
 - The kitchen tab shows each takeaway as its own card with the customer's name, a tap-to-call phone link, the address and an "Open in Google Maps" link. Steps are New, Cooking, Packed, Dispatched. Print bill includes the customer's details.
 - Payment is cash or UPI on delivery. There is no delivery fee or distance check yet.
 - Customer details are stored in Redis with the order and removed with it (3 hours after dispatch, or 12 hours at the latest). Guests can only read the status of their own order numbers.
+
+## Delivery screen (riders)
+- Open `https://<your-site>/delivery`. The browser asks for a login. Staff can use their normal login; riders use their own.
+- Optional rider login: set `KAARAM_RIDER_USER` and `KAARAM_RIDER_PASS` in Vercel. A rider can only see the delivery screen: packed takeaway orders with the customer's name, phone, address, a Navigate link and the amount to collect. They cannot open the menu editor or the kitchen feed.
+- Flow: the kitchen marks an order **Packed** → it appears under *Ready for pickup* (with a chime) → rider taps **Picked up** → *On the road* → **Mark delivered**. Delivered orders stay visible for 30 minutes so a mis-tap can be undone.
+- The customer's tracker follows along and shows **Delivered** at the end. Staff also have a **Delivery** tab in the staff bar.
