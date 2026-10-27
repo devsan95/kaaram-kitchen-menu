@@ -41,15 +41,21 @@ const OPT_PRICES = {
   drink: [['radio', [0, 0, 0]]],
   lime: [['radio', [0, 0, 0]]],
 };
-function addOnSums(key) {
+// Dishes edited in the admin carry their own choice groups (item.g); older dishes use the template named in item.o.
+function groupsOf(it) {
+  if (Array.isArray(it.g)) return it.g.map((g) => [g.type === 'check' ? 'check' : 'radio', (Array.isArray(g.choices) ? g.choices : []).slice(0, 12).map((c) => Math.max(0, Math.round(+c.p) || 0))]);
+  return OPT_PRICES[it.o] || [];
+}
+function addOnSums(it) {
   let sums = new Set([0]);
-  for (const [type, prices] of OPT_PRICES[key] || []) {
-    const next = new Set();
-    for (const base of sums) {
-      if (type === 'radio') prices.forEach((p) => next.add(base + p));
-      else for (let m = 0; m < 1 << prices.length; m++) next.add(base + prices.reduce((t, p, i) => t + (m & (1 << i) ? p : 0), 0));
+  for (const [type, prices] of groupsOf(it)) {
+    if (type === 'radio') {
+      const next = new Set();
+      for (const base of sums) for (const p of prices) next.add(base + p);
+      sums = next;
+    } else {                                   // any subset: each price is either taken or not
+      for (const p of prices) { const next = new Set(sums); for (const base of sums) next.add(base + p); sums = next; }
     }
-    sums = next;
   }
   return sums;
 }
@@ -60,7 +66,7 @@ function priced(o, { byId, gst }, tipIn) {
   for (const l of o.lines) {
     const it = byId[l.id];
     if (!it || it.off || !(it.p >= 0)) return null;
-    if (!addOnSums(it.o).has(l.unit - it.p)) return null;
+    if (!addOnSums(it).has(l.unit - it.p)) return null;
     lines.push({ ...l, name: String(it.name).slice(0, 80), v: !!it.v });
     sub += l.qty * l.unit;
   }

@@ -563,6 +563,24 @@ a.hbtn{text-decoration:none}
 .skin[aria-pressed=true]{border-color:var(--leaf);box-shadow:0 0 0 3px var(--leaf-soft)}
 .skin .sw{display:flex;height:34px;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}.skin .sw i{flex:1}
 .skin b{font-size:14px}.skin small{color:var(--muted);font-size:12px}
+.pubp{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:90;width:min(420px,calc(100% - 24px))}
+.pubp-card{background:var(--ink);color:var(--bg);border-radius:18px;padding:14px 16px;box-shadow:0 14px 40px rgba(0,0,0,.35);display:grid;gap:10px}
+.pubp-t{font-size:15px}.pubp ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pubp li{display:flex;align-items:center;gap:10px;font-size:14px;opacity:.55}.pubp li small{margin-left:auto;opacity:.8}
+.pubp li.now,.pubp li.done,.pubp li.bad{opacity:1}
+.pubp li i{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;flex:none;box-sizing:border-box}
+.pubp li.now i{border-color:var(--turmeric);border-top-color:transparent;animation:pubspin .8s linear infinite}
+.pubp li.done i{background:var(--turmeric);border-color:var(--turmeric)}.pubp li.bad i{background:var(--chilli);border-color:var(--chilli)}
+@keyframes pubspin{to{transform:rotate(360deg)}}
+.pubp-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}.pubp-bar u{display:block;height:100%;width:0;background:var(--turmeric);transition:width .5s;text-decoration:none}
+.pubp.bad .pubp-bar u{background:var(--chilli)}.pubp-x{justify-self:end;padding:6px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:inherit;font-weight:600}
+@media (prefers-reduced-motion:reduce){.pubp li.now i{animation:none}}
+.og{border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;background:var(--bg)}
+.og-head{display:flex;gap:8px;align-items:center}.og-head .og-label{flex:1;min-width:0}.og-head select{flex:none;width:auto}
+.og input:not([type=radio]),.og select,.og-preset select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:14.5px}
+.og-choices{display:grid;gap:6px}.oc{display:flex;gap:6px;align-items:center}.oc .oc-n{flex:1;min-width:0}.oc .oc-p{width:74px;flex:none}.oc-rs{font-size:13px;color:var(--muted)}
+.oc-def{width:18px;height:18px;flex:none;accent-color:var(--leaf)}.og .ib{width:34px;height:34px;flex:none}
+.og-add{align-self:start}.og-preset{display:flex;gap:8px;align-items:center;font-weight:500;font-size:13px;color:var(--muted)}.og-preset select{flex:1}
 .logo b{font:800 18px var(--f-display);color:#1b1500}.logo img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
 /*end skins*/
 /* Home: choose how to order */
@@ -1528,6 +1546,18 @@ const STEPS_DL=[['Received','The kitchen has your order'],['Cooking','On the sto
 const STEPS=IS_DL?STEPS_DL:IS_PU?STEPS_PU:STEPS_DINE;
 
 /* ---------- Menu data (embedded in the page, replaced on each publish) ---------- */
+/* Guest choices for a dish: questions with a list of choices and prices. Always rebuilt from scratch so bad data can't get in. */
+function cleanGroups(raw){
+ if(!Array.isArray(raw))return null;const out=[],ids=new Set();
+ raw.slice(0,6).forEach(g=>{if(!g||typeof g!=='object')return;
+  const choices=(Array.isArray(g.choices)?g.choices:[]).slice(0,12).map(c=>({n:String(c&&c.n||'').replace(/\s+/g,' ').trim().slice(0,40),p:Math.min(5000,Math.max(0,Math.round(+(c&&c.p)||0)))})).filter(c=>c.n);
+  if(!choices.length)return;
+  let id=String(g.id||'').toLowerCase().replace(/[^a-z0-9-]/g,'').slice(0,20);if(!id||ids.has(id)){let k=out.length;do{id='g'+k++}while(ids.has(id))}ids.add(id);
+  const type=g.type==='check'?'check':'radio',gg={id,label:String(g.label||'Choose').replace(/\s+/g,' ').trim().slice(0,40)||'Choose',type,choices};
+  if(type==='radio')gg.def=Math.min(choices.length-1,Math.max(0,parseInt(g.def,10)||0));
+  out.push(gg)});
+ return out;
+}
 function cleanMenu(raw){
  raw=raw||{};const out={v:1,pubId:String(raw.pubId||'initial'),updated:+raw.updated||0,site:cleanSite(raw.site,DEF_SITE),cats:[],items:[]};const ids=new Set();
  (Array.isArray(raw.cats)?raw.cats:[]).forEach(c=>{let id=String(c.id||'');if(!/^[a-z0-9-]{1,40}$/.test(id)||ids.has(id))id=slugId(c.name||'cat',ids);ids.add(id);
@@ -1537,7 +1567,7 @@ function cleanMenu(raw){
   const a=i.art||{},c=(Array.isArray(a.c)?a.c:[]).filter(x=>HEX.test(x));while(c.length<3)c.push(c[c.length-1]||'#C4562C');
   const art={t:ART_T.includes(a.t)?a.t:'bowl',c:c.slice(0,3)};['long','cubes','cream','steel','layers'].forEach(f=>{if(a[f])art[f]=1});
   out.items.push({id,cat:i.cat,name:String(i.name||'Untitled dish').slice(0,60),p:Math.max(0,Math.round(+i.p||0)),v:!!i.v,s:Math.min(3,Math.max(0,parseInt(i.s,10)||0)),
-   m:Math.min(180,Math.max(1,parseInt(i.m,10)||10)),d:String(i.d||'').slice(0,240),art,o:OPTS[i.o]?i.o:'',tags:(Array.isArray(i.tags)?i.tags:[]).filter(t=>TAGN[t]),
+   m:Math.min(180,Math.max(1,parseInt(i.m,10)||10)),d:String(i.d||'').slice(0,240),art,o:OPTS[i.o]?i.o:'',...(cleanGroups(i.g)?{g:cleanGroups(i.g)}:{}),tags:(Array.isArray(i.tags)?i.tags:[]).filter(t=>TAGN[t]),
    serves:Math.min(20,Math.max(1,parseInt(i.serves,10)||1)),off:!!i.off})});
  return out;
 }
@@ -1672,7 +1702,7 @@ const save=()=>lsSet(KEY+':'+TABLE,JSON.stringify(S));
 const F2={veg:false,nonveg:false,best:false,mild:false,quick:false,budget:false};let Q='';
 const A={on:false,view:'edit',changes:0};
 
-const groups=it=>OPTS[it.o]||[];
+const groups=it=>Array.isArray(it.g)?it.g:(OPTS[it.o]||[]);
 const defSel=it=>{const s={};groups(it).forEach(g=>s[g.id]=g.type==='radio'?(g.def||0):[]);return s};
 function validSel(it,sel){if(!sel||typeof sel!=='object')return false;return groups(it).every(g=>g.type==='radio'?Number.isInteger(sel[g.id])&&sel[g.id]>=0&&sel[g.id]<g.choices.length:Array.isArray(sel[g.id])&&sel[g.id].every(i=>Number.isInteger(i)&&i>=0&&i<g.choices.length))}
 function reindex(){
@@ -1874,8 +1904,8 @@ const X=`<button class="x" data-act="close" type="button" aria-label="Close">${i
 
 function openItem(id,preset){
  const it=BY[id];if(!it)return;const gs=groups(it);let sel=preset&&validSel(it,preset)?clone(preset):defSel(it),qty=1;
- const opts=gs.map(g=>`<fieldset><legend><b>${g.label}</b><small>${g.type==='radio'?'Pick one':'Optional'}</small></legend>${g.choices.map((c,i)=>{const nm=`o-${g.id}`,on=g.type==='radio'?sel[g.id]===i:sel[g.id].includes(i);
-  return `<label class="opt-row" for="${nm}-${i}"><input type="${g.type==='radio'?'radio':'checkbox'}" id="${nm}-${i}" name="${nm}" value="${i}" data-g="${g.id}" ${on?'checked':''} ${it.off?'disabled':''}><span>${c.n}</span><em>${c.p?'+'+rs(c.p):''}</em></label>`}).join('')}</fieldset>`).join('');
+ const opts=gs.map(g=>`<fieldset><legend><b>${esc(g.label)}</b><small>${g.type==='radio'?'Pick one':'Optional'}</small></legend>${g.choices.map((c,i)=>{const nm=`o-${g.id}`,on=g.type==='radio'?sel[g.id]===i:sel[g.id].includes(i);
+  return `<label class="opt-row" for="${nm}-${i}"><input type="${g.type==='radio'?'radio':'checkbox'}" id="${nm}-${i}" name="${nm}" value="${i}" data-g="${g.id}" ${on?'checked':''} ${it.off?'disabled':''}><span>${esc(c.n)}</span><em>${c.p?'+'+rs(c.p):''}</em></label>`}).join('')}</fieldset>`).join('');
  openSheet(`<div class="sheet-scroll">
   <div class="sheet-hero">${X}${artOf(it)}</div>
   <div class="pad">
@@ -2331,18 +2361,44 @@ function downloadFile(name,text){
  const url=URL.createObjectURL(new Blob([text],{type:'text/html'})),a=document.createElement('a');
  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
 }
+/* Publishing shows each step: saving, then checking that guests really get the new menu. */
+function pubUI(){
+ let el=document.getElementById('pubp');if(el)el.remove();
+ el=document.createElement('div');el.id='pubp';el.className='pubp';el.setAttribute('role','status');el.setAttribute('aria-live','polite');
+ const rows=['Saving your changes','Making it live for guests'];
+ el.innerHTML=`<div class="pubp-card"><b class="pubp-t">Publishing…</b><ol>${rows.map(r=>`<li class="todo"><i></i><span>${r}</span><small></small></li>`).join('')}</ol><div class="pubp-bar"><u></u></div><button class="pubp-x" hidden data-act="pub-close">Close</button></div>`;
+ document.body.appendChild(el);
+ const li=[...el.querySelectorAll('li')],bar=el.querySelector('.pubp-bar u'),title=el.querySelector('.pubp-t');
+ const api={
+  step(i,note){li.forEach((x,k)=>{x.className=k<i?'done':k===i?'now':'todo'});li[i].querySelector('small').textContent=note||'';bar.style.width=(i*50+(note?25:10))+'%'},
+  done(msg,warn){li.forEach(x=>{x.className='done';x.querySelector('small').textContent=''});bar.style.width='100%';el.classList.add(warn?'warn':'ok');title.textContent=msg;el.querySelector('.pubp-x').hidden=false;setTimeout(()=>{if(el.isConnected&&!warn)el.remove()},4500)},
+  fail(msg){li.forEach(x=>{if(x.className==='now')x.className='bad'});el.classList.add('bad');title.textContent=msg;el.querySelector('.pubp-x').hidden=false}
+ };
+ return api;
+}
 async function publishMenu(btn){
  if(!dirty())return;
  const next=clone(M);next.pubId=Date.now().toString(36)+rand();next.updated=Date.now();
  if(SERVER){
-  btn.disabled=true;btn.textContent='Publishing…';
+  if(btn){btn.disabled=true;btn.textContent='Publishing…'}
+  const P=pubUI();P.step(0,'');
+  const fin=()=>{renderAbar()};
   try{
    const r=await fetch('/api/menu',{method:'PUT',headers:{'Content-Type':'application/json',...authHdr()},body:JSON.stringify(next)});
-   if(r.status===401){toast('Your session expired. Sign in again.');signOut();return}
-   if(r.status===503){toast('Server storage isn’t set up yet. See the README.');btn.disabled=false;btn.textContent='Publish changes';return}
+   if(r.status===401){P.fail('Your session expired. Sign in again.');signOut();return}
+   if(r.status===503){P.fail('Server storage isn’t set up yet. See the README.');fin();return}
+   if(r.status===413){P.fail('The menu is too large to publish. Remove some dishes or shorten descriptions.');fin();return}
    if(!r.ok)throw 0;
-   DATA=cleanMenu(next);M=clone(DATA);A.changes=0;lsSet(DRAFT,null);reindex();renderAll();toast('Published. Every table now sees the new menu.');
-  }catch(e){toast('Couldn’t publish. Check your connection and try again.');btn.disabled=false;btn.textContent='Publish changes'}
+   DATA=cleanMenu(next);M=clone(DATA);A.changes=0;lsSet(DRAFT,null);reindex();renderAll();
+   /* saved. Guests read the menu through a short cache, so watch until the live address serves this version */
+   const t0=Date.now();let live=false;
+   for(let n=0;Date.now()-t0<30000;n++){
+    P.step(1,n?`checking… ${Math.round((Date.now()-t0)/1000)}s`:'checking…');
+    try{const g=await fetch('/api/menu',{cache:'no-store'});const j=g.ok?await g.json():null;if(j&&j.pubId===next.pubId){live=true;break}}catch(e){}
+    await new Promise(ok=>setTimeout(ok,1500));
+   }
+   live?P.done('Published. Guests now see the new menu.'):P.done('Saved. Guests will see it within a minute.',true);
+  }catch(e){P.fail('Couldn’t publish. Check your connection and try again.');fin()}
   return;
  }
  lsSet('kaaram-live',JSON.stringify(next));
@@ -2405,7 +2461,15 @@ function renderManager(){
 }
 function fieldErr(fid,msg){const el=document.getElementById(fid);if(!el)return;el.classList.add('err');const m=el.querySelector('.msg');if(m){m.textContent=msg;m.hidden=false}}
 function clearErrs(){body.querySelectorAll('.f.err').forEach(f=>{f.classList.remove('err');const m=f.querySelector('.msg');if(m)m.hidden=true})}
-const optHint=o=>o?OPTS[o].map(g=>`${g.label}: ${g.choices.map(c=>c.n+(c.p?` (+${rs(c.p)})`:'')).join(', ')}`).join(' · '):'No choices. Guests tap ADD and it goes straight into their order.';
+const optHint=o=>o?OPTS[o].map(g=>`${g.label}: ${g.choices.map(c=>c.n+(c.p?` (+${rs(c.p)})`:'')).join(', ')}`).join(' · '):'';
+/* Editor for a dish's guest choices (questions, their choices and prices) */
+const PRESET_LABEL={'':'Start empty',starter:'Spice level',dosa:'Dosa add-ons',biryani:'Portion, spice and add-ons',curry:'Spice and sides',drink:'Sugar level',lime:'Sweet or salted'};
+function groupsEditorHTML(gs){
+ if(!gs.length)return '<p class="hint">No choices yet. Guests tap ADD and the dish goes straight into their order.</p>';
+ return gs.map((g,gi)=>`<div class="og" data-id="${esc(g.id||'')}"><div class="og-head"><input class="og-label" value="${esc(g.label)}" maxlength="40" placeholder="Question, e.g. Spice level" aria-label="Question"><select class="og-type" aria-label="Type"><option value="radio" ${g.type!=='check'?'selected':''}>Pick one</option><option value="check" ${g.type==='check'?'selected':''}>Pick any</option></select><button type="button" class="ib" data-act="og-del" data-gi="${gi}" aria-label="Remove this question">${ic.trash}</button></div>
+  <div class="og-choices">${g.choices.map((c,ci)=>`<div class="oc"><input type="radio" class="oc-def" name="odef-${gi}" ${g.type!=='check'?'':'hidden'} ${(g.def||0)===ci?'checked':''} title="Pre-selected" aria-label="Pre-selected choice"><input class="oc-n" value="${esc(c.n)}" maxlength="40" placeholder="Choice name" aria-label="Choice name"><span class="oc-rs">+₹</span><input class="oc-p" type="number" min="0" max="5000" step="1" inputmode="numeric" value="${c.p||0}" aria-label="Extra price in rupees"><button type="button" class="ib" data-act="oc-del" data-gi="${gi}" data-ci="${ci}" aria-label="Remove this choice">×</button></div>`).join('')}
+  <button type="button" class="btn ghost og-add" data-act="oc-add" data-gi="${gi}">${ic.plus}Add a choice</button></div></div>`).join('');
+}
 function openConfirm(title,text,okLabel,onOk){
  openSheet(`<div class="sheet-scroll"><div class="pad" style="padding-top:28px">${X}<h2 class="item-title" style="padding-right:40px">${esc(title)}</h2><p class="item-desc">${esc(text)}</p></div></div>
   <div class="sheet-foot"><button class="btn ghost" data-act="close">Cancel</button><button class="btn danger solid" data-act="confirm">${esc(okLabel)}</button></div>`,'confirm',title);
@@ -2416,6 +2480,7 @@ function openDishEditor(id,cat){
  const isNew=!id||!BY[id];
  const d=isNew?{id:'',cat:(cat&&M.cats.some(c=>c.id===cat))?cat:M.cats[0].id,name:'',p:'',v:true,s:0,m:15,d:'',art:{t:'bowl',c:['#c4562c','#e89b4c','#f2e3c6']},o:'',tags:[],serves:1,off:false}:clone(BY[id]);
  d.art.c=d.art.c.map(x=>x.toLowerCase());
+ d.g=clone(isNew?[]:groups(d));
  const seg=(name,opts,val)=>`<div class="seg" role="radiogroup">${opts.map(([v,l])=>`<label><input type="radio" name="${name}" value="${v}" ${String(val)===String(v)?'checked':''}><span>${l}</span></label>`).join('')}</div>`;
  openSheet(`<div class="sheet-scroll"><div class="sheet-hero">${X}<div id="dprev">${art(d)}</div></div>
   <form class="pad form" id="dform" novalidate>
@@ -2428,30 +2493,44 @@ function openDishEditor(id,cat){
    <div class="f"><span>Spice level</span>${seg('dspice',[['0','None'],['1','Mild'],['2','Medium'],['3','Hot']],d.s)}</div>
    <div class="row2"><label class="f" id="f-time"><span>Prep time (minutes)</span><input type="number" id="d-time" min="1" max="180" inputmode="numeric" value="${d.m}"><em class="msg" hidden></em></label><label class="f"><span>Serves</span><input type="number" id="d-serves" min="1" max="20" inputmode="numeric" value="${d.serves}"></label></div>
    <div class="f"><span>Labels</span><div class="checks">${Object.entries(TAGN).map(([k,l])=>`<label><input type="checkbox" name="dtag" value="${k}" ${d.tags.includes(k)?'checked':''}><span>${l}</span></label>`).join('')}</div></div>
-   <label class="f"><span>Guest choices</span><select id="d-opt">${Object.entries(OPT_LABEL).map(([k,l])=>`<option value="${k}" ${k===d.o?'selected':''}>${l}</option>`).join('')}</select><small class="hint" id="d-opthint">${esc(optHint(d.o))}</small></label>
+   <div class="f" id="f-opts"><span>Guest choices</span><small class="hint" style="margin-top:-2px">Questions guests answer before adding this dish, such as spice level, portion or add-ons. Prices are extra, before GST.</small>
+    <div class="og-preset"><label for="d-preset">Fill from a template</label><select id="d-preset">${Object.entries(PRESET_LABEL).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <div id="d-groups">${groupsEditorHTML(d.g)}</div><button type="button" class="btn ghost" data-act="og-add">${ic.plus}Add a question</button><em class="msg" hidden></em></div>
    <div class="row2"><label class="f"><span>Illustration</span><select id="d-art">${ART_TYPES.map(([k,l])=>`<option value="${k}" ${k===d.art.t?'selected':''}>${l}</option>`).join('')}</select></label>
     <div class="f"><span>Colours</span><div class="colors"><input type="color" id="d-c1" value="${d.art.c[0]}" aria-label="Main colour"><input type="color" id="d-c2" value="${d.art.c[1]}" aria-label="Highlight colour"></div></div></div>
    <label class="toggle-row" for="d-avail"><span>Available today<small class="hint">Turn off to show it as sold out without deleting it.</small></span><span class="avail" style="flex:none"><input type="checkbox" id="d-avail" ${d.off?'':'checked'}></span></label>
   </form></div>
   <div class="sheet-foot">${isNew?'<button class="btn ghost" data-act="close">Cancel</button>':`<button class="btn danger" data-act="a-del" data-id="${d.id}">${ic.trash}Delete</button>`}<button class="btn primary" data-act="confirm">${isNew?'Add dish':'Save changes'}</button></div>`,'dish',isNew?'New dish':'Edit '+d.name);
  const v=k=>document.getElementById(k);
+ const readGroups=()=>{d.g=[...body.querySelectorAll('#d-groups .og')].map(go=>({id:go.dataset.id||'',label:go.querySelector('.og-label').value,type:go.querySelector('.og-type').value,def:Math.max(0,[...go.querySelectorAll('.oc-def')].findIndex(x=>x.checked)),choices:[...go.querySelectorAll('.oc')].map(oc=>({n:oc.querySelector('.oc-n').value,p:oc.querySelector('.oc-p').value}))}))};
+ const drawGroups=()=>{v('d-groups').innerHTML=groupsEditorHTML(d.g)};
  const read=()=>{
   d.name=v('d-name').value.trim();d.cat=v('d-cat').value;d.p=v('d-price').value===''?'':+v('d-price').value;
   d.v=(body.querySelector('input[name=dveg]:checked')||{}).value!=='0';d.s=+((body.querySelector('input[name=dspice]:checked')||{}).value||0);
   d.m=parseInt(v('d-time').value,10)||0;d.serves=Math.min(20,Math.max(1,parseInt(v('d-serves').value,10)||1));d.d=v('d-desc').value.trim();
-  d.tags=[...body.querySelectorAll('input[name=dtag]:checked')].map(x=>x.value);d.o=OPTS[v('d-opt').value]?v('d-opt').value:'';
+  d.tags=[...body.querySelectorAll('input[name=dtag]:checked')].map(x=>x.value);readGroups();
   const c1=v('d-c1').value,c2=v('d-c2').value;
   d.art=Object.assign({},d.art,{t:ART_T.includes(v('d-art').value)?v('d-art').value:'bowl',c:[HEX.test(c1)?c1:d.art.c[0],HEX.test(c2)?c2:d.art.c[1],d.art.c[2]||c2]});
   d.off=!v('d-avail').checked;
  };
- ctx.change=e=>{if(!e.target.closest('#dform'))return;read();v('dprev').innerHTML=art(d);v('d-opthint').textContent=optHint(d.o)};
+ ctx.change=e=>{if(!e.target.closest('#dform'))return;
+  if(e.target.id==='d-preset'){const k=e.target.value;d.g=clone(OPTS[k]||[]);d.o=k;drawGroups();return}
+  if(e.target.classList.contains('og-type')){read();drawGroups();return}
+  read();v('dprev').innerHTML=art(d)};
+ ctx.og=(a,el)=>{read();const gi=+el.dataset.gi,ci=+el.dataset.ci;
+  if(a==='og-add'){if(d.g.length>=6){toast('Up to 6 questions per dish.');return}d.g.push({id:'',label:'',type:'radio',def:0,choices:[{n:'',p:0},{n:'',p:0}]})}
+  else if(a==='og-del')d.g.splice(gi,1);
+  else if(a==='oc-add'){if(d.g[gi].choices.length>=12){toast('Up to 12 choices per question.');return}d.g[gi].choices.push({n:'',p:0})}
+  else if(a==='oc-del'){d.g[gi].choices.splice(ci,1);if(!d.g[gi].choices.length)d.g.splice(gi,1);else d.g[gi].def=Math.min(d.g[gi].def||0,d.g[gi].choices.length-1)}
+  drawGroups();const fl=body.querySelector('#d-groups .og:last-child .og-label');if(a==='og-add'&&fl)fl.focus()};
  ctx.confirm=()=>{
   read();clearErrs();let bad=null;
   if(!d.name){fieldErr('f-name','Give the dish a name.');bad=bad||'d-name'}
   if(d.p===''||!isFinite(d.p)||d.p<0||d.p>100000){fieldErr('f-price','Enter a price in rupees, 0 to 1,00,000.');bad=bad||'d-price'}
   if(d.m<1||d.m>180){fieldErr('f-time','Use 1 to 180 minutes.');bad=bad||'d-time'}
-  if(bad){v(bad).focus();return}
-  d.p=Math.round(d.p);
+  if(d.g.some(g=>!g.label.trim()||!g.choices.length||g.choices.some(c=>!String(c.n).trim()))){fieldErr('f-opts','Every question needs a title and every choice needs a name. Remove the ones you don’t need.');bad=bad||'d-groups'}
+  if(bad){const t=v(bad);t.focus&&t.focus();t.scrollIntoView&&t.scrollIntoView({block:'center'});return}
+  d.g=cleanGroups(d.g)||[];d.p=Math.round(d.p);
   mutate(m=>{if(isNew){d.id=slugId(d.name,new Set(m.items.map(i=>i.id).concat(m.cats.map(c=>c.id))));m.items.push(d)}else{const i=m.items.findIndex(x=>x.id===d.id);if(i>=0)m.items[i]=d}},isNew?`${d.name} added to the draft`:`${d.name} updated`);
   closeSheet();
  };
@@ -2616,6 +2695,8 @@ document.addEventListener('click',e=>{
   case 'ldec':changeLine(el.dataset.key,-1);break;
   case 'sq':ctx.qty&&ctx.qty(+el.dataset.d);break;
   case 'confirm':ctx.confirm&&ctx.confirm();break;
+  case 'pub-close':{const e=document.getElementById('pubp');if(e)e.remove();break}
+  case 'og-add':case 'og-del':case 'oc-add':case 'oc-del':ctx.og&&ctx.og(a,el);break;
   case 'cart':openCart();break;
   case 'close':closeSheet();break;
   case 'place':if(IS_OFF)openCheckout();else placeOrder(el,null,el.dataset.pay||'cash');break;
