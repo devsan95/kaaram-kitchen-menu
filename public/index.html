@@ -2079,18 +2079,17 @@ function openWaiter(){
 const HOLD_SECS=10;let HOLD=null;
 function placeOrder(btn,cust,pay){
  if(!cartCount()||HOLD||PAYING)return;
- if(pay==='online'&&PAYON){payOnline(btn,cust);return}
  const end=Date.now()+HOLD_SECS*1000,el=document.createElement('div');
  el.className='hold';el.setAttribute('role','alertdialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-labelledby','holdT');
  el.innerHTML=`<div class="hold-card"><div class="hold-ring"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21" class="bg"/><circle cx="24" cy="24" r="21" class="fg" style="animation-duration:${HOLD_SECS}s"/></svg><b id="holdN">${HOLD_SECS}</b></div>
-  <h2 id="holdT">Order placed</h2><p>Going to the kitchen in <b id="holdS">${HOLD_SECS}</b> seconds. Tapped by mistake? Cancel now and nothing is sent.</p>
+  <h2 id="holdT">Order placed</h2><p>${pay==='online'&&PAYON?'Opening payment in':'Going to the kitchen in'} <b id="holdS">${HOLD_SECS}</b> seconds. Tapped by mistake? Cancel now and nothing is sent.</p>
   <button class="btn ghost block" data-act="hold-cancel">Cancel order</button></div>`;
  document.body.appendChild(el);
  const cb=el.querySelector('button');cb.focus();
  const t=setInterval(()=>{
   const left=Math.max(0,Math.ceil((end-Date.now())/1000));
   const n=document.getElementById('holdN'),m=document.getElementById('holdS');if(n)n.textContent=left;if(m)m.textContent=left;
-  if(Date.now()>=end){clearInterval(t);HOLD=null;el.remove();sendOrder(btn,cust)}
+  if(Date.now()>=end){clearInterval(t);HOLD=null;el.remove();if(pay==='online'&&PAYON)payOnline(btn,cust);else sendOrder(btn,cust)}
  },200);
  HOLD={el,t};
 }
@@ -2754,6 +2753,11 @@ document.addEventListener('change',e=>{
 });
 scrim.addEventListener('click',closeSheet);
 body.addEventListener('change',e=>ctx.change&&ctx.change(e));
+/* Tapping anywhere on an option row selects it, without relying on the browser's label-to-input forwarding (flaky on some phones). */
+body.addEventListener('click',e=>{const row=e.target.closest&&e.target.closest('.opt-row');if(!row||e.target.tagName==='INPUT')return;
+ const i=row.querySelector('input');if(!i||i.disabled)return;e.preventDefault();
+ if(i.type==='radio'){if(i.checked)return;i.checked=true}else i.checked=!i.checked;
+ i.dispatchEvent(new Event('change',{bubbles:true}))});
 body.addEventListener('input',e=>{if(sheetType==='dish'&&ctx.change)ctx.change(e)});
 document.addEventListener('input',e=>{if(e.target.dataset.bind==='note'){S.note=e.target.value;save()}});
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{const f=b.dataset.filter;F2[f]=!F2[f];if(f==='veg'&&F2.veg)F2.nonveg=false;if(f==='nonveg'&&F2.nonveg)F2.veg=false;syncChips();renderMenu()}));
