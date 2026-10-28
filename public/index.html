@@ -2082,8 +2082,8 @@ function openWaiter(){
   ${S.orders.length?`<button class="btn ghost block" style="margin-top:12px" data-act="bill">${ic.receipt}Ask for the bill</button>`:''}
  </div></div>`,'waiter','Call a server');
 }
-/* An order is held for 10 seconds so an accidental tap can be cancelled; after that it goes to the kitchen. */
-const HOLD_SECS=10;let HOLD=null;
+/* An order is held for 5 seconds so an accidental tap can be cancelled; after that it goes to the kitchen. */
+const HOLD_SECS=5;let HOLD=null;
 function placeOrder(btn,cust,pay){
  if(!cartCount()||HOLD||PAYING)return;
  const end=Date.now()+HOLD_SECS*1000,el=document.createElement('div');
