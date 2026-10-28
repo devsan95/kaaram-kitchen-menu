@@ -262,9 +262,11 @@ legend small{font-size:12px;color:var(--muted);font-weight:600}
 .opt-row:last-child{border-bottom:0}
 .opt-row input{appearance:none;-webkit-appearance:none;width:20px;height:20px;border:2px solid var(--muted);border-radius:50%;margin:0;flex:none;display:grid;place-items:center;transition:border-color .15s}
 .opt-row input[type=checkbox]{border-radius:6px}
-.opt-row input:checked{border-color:var(--leaf);background:var(--leaf)}
-.opt-row input[type=radio]:checked{background:var(--surface);box-shadow:inset 0 0 0 4px var(--surface),inset 0 0 0 10px var(--leaf)}
-.opt-row input[type=checkbox]:checked::after{content:"";width:5px;height:9px;border:solid var(--leaf-ink);border-width:0 2.2px 2.2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.opt-row input:checked,.opt-row.on input{border-color:var(--leaf);background:var(--leaf)}
+.opt-row input[type=radio]:checked,.opt-row.on input[type=radio]{background:radial-gradient(circle,var(--leaf) 0 40%,var(--surface) 46%)}
+.opt-row input[type=checkbox]:checked::after,.opt-row.on input[type=checkbox]::after{content:"";width:5px;height:9px;border:solid var(--leaf-ink);border-width:0 2.2px 2.2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.opt-row.on{background:var(--leaf-soft);border-radius:10px;padding-left:8px;padding-right:8px;margin:0 -8px}
+.opt-row.on span{font-weight:700}
 .opt-row input:focus-visible{outline:2.5px solid var(--leaf);outline-offset:2px}
 .opt-row span{flex:1;font-weight:550}
 .opt-row em{font-style:normal;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
@@ -1906,7 +1908,7 @@ const X=`<button class="x" data-act="close" type="button" aria-label="Close">${i
 function openItem(id,preset){
  const it=BY[id];if(!it)return;const gs=groups(it);let sel=preset&&validSel(it,preset)?clone(preset):defSel(it),qty=1;
  const opts=gs.map(g=>`<fieldset><legend><b>${esc(g.label)}</b><small>${g.type==='radio'?'Pick one':'Optional'}</small></legend>${g.choices.map((c,i)=>{const nm=`o-${g.id}`,on=g.type==='radio'?sel[g.id]===i:sel[g.id].includes(i);
-  return `<label class="opt-row" for="${nm}-${i}"><input type="${g.type==='radio'?'radio':'checkbox'}" id="${nm}-${i}" name="${nm}" value="${i}" data-g="${g.id}" ${on?'checked':''} ${it.off?'disabled':''}><span>${esc(c.n)}</span><em>${c.p?'+'+rs(c.p):''}</em></label>`}).join('')}</fieldset>`).join('');
+  return `<label class="opt-row${on?' on':''}" for="${nm}-${i}"><input type="${g.type==='radio'?'radio':'checkbox'}" id="${nm}-${i}" name="${nm}" value="${i}" data-g="${g.id}" ${on?'checked':''} ${it.off?'disabled':''}><span>${esc(c.n)}</span><em>${c.p?'+'+rs(c.p):''}</em></label>`}).join('')}</fieldset>`).join('');
  openSheet(`<div class="sheet-scroll">
   <div class="sheet-hero">${X}${artOf(it)}</div>
   <div class="pad">
@@ -2752,7 +2754,7 @@ document.addEventListener('change',e=>{
  if(av&&A.on&&BY[av]){const it=BY[av],on=e.target.checked;mutate(()=>{it.off=!on},on?`${it.name} is available`:`${it.name} marked sold out`)}
 });
 scrim.addEventListener('click',closeSheet);
-body.addEventListener('change',e=>ctx.change&&ctx.change(e));
+body.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('.opt-row'))body.querySelectorAll('.opt-row').forEach(r=>{const i=r.querySelector('input');r.classList.toggle('on',!!(i&&i.checked))});ctx.change&&ctx.change(e)});
 /* Tapping anywhere on an option row selects it, without relying on the browser's label-to-input forwarding (flaky on some phones). */
 body.addEventListener('click',e=>{const row=e.target.closest&&e.target.closest('.opt-row');if(!row||e.target.tagName==='INPUT')return;
  const i=row.querySelector('input');if(!i||i.disabled)return;e.preventDefault();
