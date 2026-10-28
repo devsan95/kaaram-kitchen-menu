@@ -2601,7 +2601,7 @@ function seedExamples(){
  writeFeed();
 }
 function chime(){if(!soundOn||!audio)return;try{const t=audio.currentTime;[880,1320].forEach((f,i)=>{const o=audio.createOscillator(),g=audio.createGain(),s=t+i*.18;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.22,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.32);o.connect(g).connect(audio.destination);o.start(s);o.stop(s+.34)})}catch(e){}}
-function scheduleDemo(){clearTimeout(demoT);if(NETFEED||!demoOn||A.view!=='kitchen'||!A.on)return;demoT=setTimeout(()=>{FEED=readFeed();FEED.tickets.push(makeTicket(1+Math.floor(Math.random()*TABLES),Date.now(),0));writeFeed();feedChanged();scheduleDemo()},15000+Math.random()*15000)}
+function scheduleDemo(){clearTimeout(demoT);if(NETFEED||!demoOn||A.view!=='kitchen'||!A.on)return;demoT=setTimeout(()=>{FEED=readFeed();FEED.tickets.push(makeTicket(1+Math.floor(Math.random()*SITE.tables),Date.now(),0));writeFeed();feedChanged();scheduleDemo()},15000+Math.random()*15000)}
 function stopKitchen(){clearTimeout(demoT);demoT=null;if(wake){try{wake.release()}catch(e){}wake=null}}
 function startKitchen(){
  kPrimed=false;kVer='';lastChangeAt=Date.now();nextPollAt=0;seedExamples();seen=new Set(FEED.tickets.map(t=>t.no));HB=Date.now();lsSet(HB_KEY,String(HB));
@@ -2643,7 +2643,7 @@ function renderKitchen(){
   <div class="kstat"><small>Open tickets</small><b>${open.length}</b></div>
   <div class="kstat"><small>Not started</small><b class="${open.some(t=>t.st===0&&now-t.at>=5*60e3)?'warn':''}">${open.filter(t=>t.st===0).length}</b></div>
   <div class="kstat"><small>Oldest in prep</small><b class="timer-stat ${oldest?lateClass(now-oldest,0):''}" ${oldest?`data-since="${oldest}" data-st="0"`:''}><span>${oldest?mmss(now-oldest):'–'}</span></b></div>
-  <div class="kstat"><small>Tables with orders</small><b>${tables.length}<span style="font-size:15px;color:var(--muted);font-weight:600"> / ${TABLES}</span></b></div>
+  <div class="kstat"><small>Tables with orders</small><b>${tables.length}<span style="font-size:15px;color:var(--muted);font-weight:600"> / ${SITE.tables}</span></b></div>
  </div><div class="kds-body"><div class="kmain">`;
  if(!open.length)h+=`<div class="empty ktable">${emptyPlate()}<h3>No open orders</h3><p>New orders appear here the moment a table sends them.</p></div>`;
  else if(KV==='tables'){
