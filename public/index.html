@@ -1703,6 +1703,7 @@ const F2={veg:false,nonveg:false,best:false,mild:false,quick:false,budget:false}
 const A={on:false,view:'edit',changes:0};
 
 const groups=it=>Array.isArray(it.g)?it.g:(OPTS[it.o]||[]);
+const hasOpts=it=>groups(it).length>0;   // does this dish ask the guest anything?
 const defSel=it=>{const s={};groups(it).forEach(g=>s[g.id]=g.type==='radio'?(g.def||0):[]);return s};
 function validSel(it,sel){if(!sel||typeof sel!=='object')return false;return groups(it).every(g=>g.type==='radio'?Number.isInteger(sel[g.id])&&sel[g.id]>=0&&sel[g.id]<g.choices.length:Array.isArray(sel[g.id])&&sel[g.id].every(i=>Number.isInteger(i)&&i>=0&&i<g.choices.length))}
 function reindex(){
@@ -1791,7 +1792,7 @@ function matches(it){
 function ctl(it,pick){
  if(it.off)return '<span class="soldtag">Sold out</span>';
  const q=qtyOf(it.id);
- if(!q)return `<button class="add" data-act="add" data-id="${it.id}" aria-label="Add ${esc(it.name)}">ADD<b>+</b></button>${it.o&&!pick?'<small>Customisable</small>':''}`;
+ if(!q)return `<button class="add" data-act="add" data-id="${it.id}" aria-label="Add ${esc(it.name)}">ADD<b>+</b></button>${hasOpts(it)&&!pick?'<small>Customisable</small>':''}`;
  return `<div class="step" role="group" aria-label="${esc(it.name)} quantity"><button data-act="dec" data-id="${it.id}" aria-label="Remove one">−</button><span class="num">${q}</span><button data-act="inc" data-id="${it.id}" aria-label="Add one">+</button></div>`;
 }
 function card(it){
@@ -2686,8 +2687,8 @@ document.addEventListener('click',e=>{
  if((a.startsWith('a-')&&a!=='a-login'||a.startsWith('k-'))&&!A.on)return;
  switch(a){
   case 'open':openItem(id);break;
-  case 'add':{const it=BY[id];if(!it)break;if(it.o)openItem(id);else{addLine(id,defSel(it));toast(`${it.name} added`)}break}
-  case 'inc':{const it=BY[id];if(!it)break;if(it.o)openRepeat(id);else addLine(id,defSel(it));break}
+  case 'add':{const it=BY[id];if(!it)break;if(hasOpts(it))openItem(id);else{addLine(id,defSel(it));toast(`${it.name} added`)}break}
+  case 'inc':{const it=BY[id];if(!it)break;if(hasOpts(it))openRepeat(id);else addLine(id,defSel(it));break}
   case 'dec':{const ls=S.cart.filter(l=>l.id===id);if(ls.length===1)changeLine(ls[0].key,-1);else{openCart();toast('This dish has different versions. Adjust it here.')}break}
   case 'repeat':{const l=S.last[id]||{sel:defSel(BY[id]),note:''};addLine(id,l.sel,1,l.note||'');closeSheet();break}
   case 'customise':openItem(id,S.last[id]&&S.last[id].sel);break;
