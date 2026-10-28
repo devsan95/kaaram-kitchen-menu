@@ -570,11 +570,16 @@ a.hbtn{text-decoration:none}
 .pubp-t{font-size:15px}.pubp ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pubp li{display:flex;align-items:center;gap:10px;font-size:14px;opacity:.55}.pubp li small{margin-left:auto;opacity:.8}
 .pubp li.now,.pubp li.done,.pubp li.bad{opacity:1}
-.pubp li i{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;flex:none;box-sizing:border-box}
-.pubp li.now i{border-color:var(--turmeric);border-top-color:transparent;animation:pubspin .8s linear infinite}
-.pubp li.done i{background:var(--turmeric);border-color:var(--turmeric)}.pubp li.bad i{background:var(--chilli);border-color:var(--chilli)}
+.pubp li i{width:20px;height:20px;border-radius:50%;border:2px solid currentColor;flex:none;box-sizing:border-box;opacity:.5;position:relative}
+.pubp li.now i{opacity:1;border-color:#E3A414;border-top-color:transparent;animation:pubspin .8s linear infinite}
+.pubp li.done i,.pubp li.bad i{opacity:1;border:0;width:20px;height:20px}
+.pubp li.done i{background:#1E9E57}.pubp li.bad i{background:#D8432C}
+.pubp li.done i::after{content:"";position:absolute;left:6.5px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.pubp li.bad i::before,.pubp li.bad i::after{content:"";position:absolute;left:9px;top:4px;width:2.5px;height:12px;background:#fff;border-radius:2px;transform:rotate(45deg)}
+.pubp li.bad i::after{transform:rotate(-45deg)}
+.pubp li.done span{font-weight:650}
 @keyframes pubspin{to{transform:rotate(360deg)}}
-.pubp-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}.pubp-bar u{display:block;height:100%;width:0;background:var(--turmeric);transition:width .5s;text-decoration:none}
+.pubp-bar{height:6px;border-radius:3px;background:color-mix(in srgb,currentColor 18%,transparent);overflow:hidden}.pubp-bar u{display:block;height:100%;width:0;background:#1E9E57;transition:width .5s;text-decoration:none}
 .pubp.bad .pubp-bar u{background:var(--chilli)}.pubp-x{justify-self:end;padding:6px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:inherit;font-weight:600}
 @media (prefers-reduced-motion:reduce){.pubp li.now i{animation:none}}
 .og{border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;background:var(--bg)}
